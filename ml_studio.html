@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ML Math Studio — 3Blue1Brown Style</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --blue: #58c4dd;
+    --gold: #f0ac5f;
+    --green: #83c167;
+    --red: #fc6255;
+    --purple: #b392f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0b0e14;
+  }
+  header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  header h1 span { color: var(--blue); }
+  header .sub { font-size: 0.85rem; color: var(--muted); }
+  .suite-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .suite-nav a {
+    text-decoration: none; font-size: 0.82rem; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+  }
+  .suite-nav a:hover { color: var(--text); border-color: var(--blue); }
+  .suite-nav a.cur { background: rgba(88,196,221,0.16); color: var(--blue); border-color: var(--blue); }
+  .insight-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 680px) { .insight-row { grid-template-columns: 1fr; } }
+  .insight {
+    background: #0d1117; border-radius: 8px; padding: 9px 12px;
+    font-size: 0.81rem; line-height: 1.45; border: 1px solid var(--border);
+  }
+  .insight.analogy { border-left: 3px solid var(--blue); }
+  .insight.trap { border-left: 3px solid var(--red); }
+  .insight b { display: block; margin-bottom: 2px; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.4px; }
+  .insight.analogy b { color: var(--blue); }
+  .insight.trap b { color: var(--red); }
+
+  nav {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  nav button:hover { color: var(--text); background: #21262d; }
+  nav button.active {
+    color: var(--bg);
+    background: var(--blue);
+    font-weight: 600;
+  }
+
+  main {
+    flex: 1;
+    padding: 24px;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .tab { display: none; }
+  .tab.active { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; }
+  @media (max-width: 920px) {
+    .tab.active { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card h2 { font-size: 1.05rem; color: var(--blue); }
+  .card p.desc { font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+
+  canvas {
+    width: 100%;
+    height: 320px;
+    background: #090c10;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+  }
+  .slider-header .val { color: var(--gold); font-weight: 600; font-family: monospace; }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--blue);
+    cursor: pointer;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .stat {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .stat .label { font-size: 0.75rem; color: var(--muted); }
+  .stat .num { font-size: 1.15rem; font-weight: 700; margin-top: 2px; font-family: monospace; }
+
+  .code-box {
+    background: #090c10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    color: #c9d1d9;
+    white-space: pre;
+  }
+  .kw { color: #ff7b72; }
+  .fn { color: #d2a8ff; }
+  .num-c { color: #79c0ff; }
+  .cm { color: #8b949e; }
+  .str { color: #a5d6ff; }
+
+  .btn {
+    background: var(--blue);
+    color: #0d1117;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.secondary {
+    background: #21262d;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Quiz styles */
+  .quiz-wrap { grid-column: 1 / -1; max-width: 720px; width: 100%; margin: 0 auto; }
+  .quiz-q { font-size: 1.1rem; line-height: 1.5; margin: 6px 0 12px; }
+  .quiz-input-row { display: flex; gap: 10px; }
+  .quiz-input-row input {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+  .feedback {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    display: none;
+  }
+  .feedback.ok { display: block; background: rgba(131,193,103,0.15); border: 1px solid var(--green); color: var(--green); }
+  .feedback.err { display: block; background: rgba(252,98,85,0.15); border: 1px solid var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>ML Math</span> Studio</h1>
+    <div class="sub">Interactive 3Blue1Brown-style visuals + live Python code</div>
+  </div>
+  <div class="suite-nav">
+    <a href="ml_studio.html" class="cur">ML Math</a>
+    <a href="pandas_sql_studio.html">Pandas &amp; SQL</a>
+    <a href="algo_studio.html">DSA Studio</a>
+    <a href="py_algolab.html">PyAlgoLab</a>
+  </div>
+</header>
+
+<nav id="nav">
+  <button class="active" data-tab="bell">1. Bell Curve &amp; Z-Score</button>
+  <button data-tab="bayes">2. Bayes' Theorem</button>
+  <button data-tab="grad">3. Gradient Descent</button>
+  <button data-tab="dot">4. Dot Product</button>
+  <button data-tab="reg">5. Linear Regression</button>
+  <button data-tab="cm">6. Precision &amp; Recall</button>
+  <button data-tab="quiz">7. Practice Quiz</button>
+  <button data-tab="pipe">8. ML Pipeline Builder</button>
+</nav>
+
+<main>
+  <!-- 1. BELL CURVE -->
+  <section id="bell" class="tab active">
+    <div class="card">
+      <h2>Bell Curve &amp; Z-Score (StandardScaler)</h2>
+      <p class="desc">Drag <b>Value</b> to move your pin on the bell curve. Notice how 68% sit within ±1 SD, 95% within ±2 SD, and 99.7% within ±3 SD.</p>
+      <canvas id="c-bell" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Z-Score</div><div class="num" id="bell-z" style="color:var(--gold)">0.00</div></div>
+        <div class="stat"><div class="label">Zone</div><div class="num" id="bell-zone" style="color:var(--green)">Within 1 SD</div></div>
+        <div class="stat"><div class="label">Status</div><div class="num" id="bell-status" style="color:var(--blue)">Normal</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b>The Bell Curve is the whole map; your Z-score is your pin telling you how many steps left or right of average you are.</div>
+        <div class="insight trap"><b>Common ML Trap</b>Fitting <code>StandardScaler</code> BEFORE <code>train_test_split</code> causes Data Leakage! Always put it inside a <code>Pipeline</code>.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>Value (Height cm)</span><span class="val" id="bell-val-t">165</span></div>
+          <input type="range" id="bell-val" min="135" max="195" value="165" step="1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Mean (Average)</span><span class="val" id="bell-mean-t">165</span></div>
+          <input type="range" id="bell-mean" min="150" max="180" value="165" step="1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>SD (Step Size)</span><span class="val" id="bell-sd-t">7</span></div>
+          <input type="range" id="bell-sd" min="3" max="15" value="7" step="1" />
+        </div>
+      </div>
+      <div class="code-box" id="code-bell"></div>
+    </div>
+  </section>
+
+  <!-- 2. BAYES -->
+  <section id="bayes" class="tab">
+    <div class="card">
+      <h2>Bayes' Theorem — 1,000 People Grid</h2>
+      <p class="desc">Each dot is 1 person. <b style="color:var(--red)">Red = Sick &amp; Caught</b>, <b style="color:var(--gold)">Gold = Healthy False Alarm</b>, Grey = Tested Negative.</p>
+      <canvas id="c-bayes" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Caught (True +)</div><div class="num" id="b-tp" style="color:var(--red)">10</div></div>
+        <div class="stat"><div class="label">False Alarms</div><div class="num" id="b-fp" style="color:var(--gold)">50</div></div>
+        <div class="stat"><div class="label">P(Sick | Positive)</div><div class="num" id="b-prob" style="color:var(--blue)">16.7%</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b>Even a tiny 5% false alarm rate on 980 healthy people creates 49 alarms—easily outnumbering 18 truly sick people!</div>
+        <div class="insight trap"><b>Common Trap (Base-Rate Fallacy)</b>Confusing <code>P(Positive | Sick)</code> (90%) with <code>P(Sick | Positive)</code> (often under 30% for rare events!).</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>Actually Sick (%)</span><span class="val" id="b-prev-t">1%</span></div>
+          <input type="range" id="b-prev" min="1" max="30" value="2" step="1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Test Catches Sick (%)</span><span class="val" id="b-sens-t">90%</span></div>
+          <input type="range" id="b-sens" min="50" max="100" value="90" step="1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>False Alarm Rate (%)</span><span class="val" id="b-fpr-t">5%</span></div>
+          <input type="range" id="b-fpr" min="1" max="30" value="5" step="1" />
+        </div>
+      </div>
+      <div class="code-box" id="code-bayes"></div>
+    </div>
+  </section>
+
+  <!-- 3. GRADIENT DESCENT -->
+  <section id="grad" class="tab">
+    <div class="card">
+      <h2>Gradient Descent — Rolling Downhill</h2>
+      <p class="desc">Curve: <b>Loss(w) = (w - 3)²</b>. Watch the AI adjust weight <b>w</b> using the slope (derivative) until Slope = 0!</p>
+      <canvas id="c-grad" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Weight (w)</div><div class="num" id="g-w" style="color:var(--gold)">-2.00</div></div>
+        <div class="stat"><div class="label">Slope (Derivative)</div><div class="num" id="g-slope" style="color:var(--red)">-10.00</div></div>
+        <div class="stat"><div class="label">Loss (Mistake)</div><div class="num" id="g-loss" style="color:var(--blue)">25.00</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b>Walking downhill blindfolded—feel the slope under your feet and step opposite the uphill direction until flat (slope = 0).</div>
+        <div class="insight trap"><b>Common Trap</b>Try dragging Learning Rate to <b>0.95</b>! Too high makes the ball overshoot &amp; bounce wildly; too low takes forever.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>Learning Rate (Step Size)</span><span class="val" id="g-lr-t">0.15</span></div>
+          <input type="range" id="g-lr" min="0.02" max="0.95" value="0.15" step="0.01" />
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="g-step">Take 1 Step</button>
+          <button class="btn" id="g-auto">Auto Roll</button>
+          <button class="btn secondary" id="g-reset">Reset</button>
+        </div>
+      </div>
+      <div class="code-box" id="code-grad"></div>
+    </div>
+  </section>
+
+  <!-- 4. DOT PRODUCT -->
+  <section id="dot" class="tab">
+    <div class="card">
+      <h2>Dot Product — Inside One AI Neuron</h2>
+      <p class="desc">Multiply each house feature by its weight, then add them up to predict the price!</p>
+      <canvas id="c-dot" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Size × w1</div><div class="num" id="d-p1" style="color:var(--blue)">150</div></div>
+        <div class="stat"><div class="label">Beds × w2</div><div class="num" id="d-p2" style="color:var(--purple)">30</div></div>
+        <div class="stat"><div class="label">Dot Product (Price)</div><div class="num" id="d-sum" style="color:var(--green)">$180k</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b>A grocery receipt: multiply each item's quantity by its price, then add them all up into one total bill!</div>
+        <div class="insight trap"><b>Common Trap</b>Unequal vector lengths crash with a <b>shape mismatch error</b>—check <code>.shape</code> or pad with zeros.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>House Size (sq ft)</span><span class="val" id="d-x1-t">1500</span></div>
+          <input type="range" id="d-x1" min="500" max="3000" value="1500" step="100" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Bedrooms</span><span class="val" id="d-x2-t">3</span></div>
+          <input type="range" id="d-x2" min="1" max="6" value="3" step="1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Weight w1 ($k per sq ft)</span><span class="val" id="d-w1-t">0.15</span></div>
+          <input type="range" id="d-w1" min="0.05" max="0.30" value="0.15" step="0.01" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Weight w2 ($k per bed)</span><span class="val" id="d-w2-t">15</span></div>
+          <input type="range" id="d-w2" min="0" max="50" value="15" step="1" />
+        </div>
+      </div>
+      <div class="code-box" id="code-dot"></div>
+    </div>
+  </section>
+
+  <!-- 5. LINEAR REGRESSION -->
+  <section id="reg" class="tab">
+    <div class="card">
+      <h2>Linear Regression Playground</h2>
+      <p class="desc">Drag <b>Slope</b> &amp; <b>Intercept</b> to fit the line to the blue dots. Red vertical bars = mistakes (errors). Try to make MSE as tiny as possible!</p>
+      <canvas id="c-reg" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Mean Squared Error</div><div class="num" id="r-mse" style="color:var(--red)">0.0</div></div>
+        <div class="stat"><div class="label">Best Possible MSE</div><div class="num" style="color:var(--green)">1.8</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b>Laying a straight ruler across scattered dots so the total length of all red vertical mistake-bars is as tiny as possible.</div>
+        <div class="insight trap"><b>Common Trap</b>Squaring errors (MSE) punishes huge outliers heavily—one $50M mansion can tilt the entire line!</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>Slope (m)</span><span class="val" id="r-m-t">1.0</span></div>
+          <input type="range" id="r-m" min="-1" max="4" value="1.0" step="0.1" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-header"><span>Intercept (b)</span><span class="val" id="r-b-t">2.0</span></div>
+          <input type="range" id="r-b" min="-5" max="15" value="2.0" step="0.5" />
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="r-fit">Auto-Fit Best Line</button>
+        </div>
+      </div>
+      <div class="code-box" id="code-reg"></div>
+    </div>
+  </section>
+
+  <!-- 6. PRECISION & RECALL -->
+  <section id="cm" class="tab">
+    <div class="card">
+      <h2>Precision vs. Recall (Threshold)</h2>
+      <p class="desc">Move the yellow threshold line. Left = predicted Negative, Right = predicted Positive. Watch Precision &amp; Recall trade off!</p>
+      <canvas id="c-cm" width="680" height="320"></canvas>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Precision (Few False Alarms)</div><div class="num" id="cm-prec" style="color:var(--blue)">0%</div></div>
+        <div class="stat"><div class="label">Recall (Catch All True)</div><div class="num" id="cm-rec" style="color:var(--green)">0%</div></div>
+        <div class="stat"><div class="label">TP / FP / FN</div><div class="num" id="cm-counts" style="color:var(--gold)">0/0/0</div></div>
+      </div>
+      <div class="insight-row">
+        <div class="insight analogy"><b>Real-Life Analogy</b><b>Precision</b> = when the fire alarm rings, is it a real fire? <b>Recall</b> = out of all real fires, how many did we catch?</div>
+        <div class="insight trap"><b>Common Trap</b>Using Accuracy on imbalanced data (99% healthy)—always check Precision, Recall &amp; Confusion Matrix!</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Controls &amp; Live Python Code</h2>
+      <div class="controls">
+        <div class="slider-row">
+          <div class="slider-header"><span>Decision Threshold</span><span class="val" id="cm-th-t">0.50</span></div>
+          <input type="range" id="cm-th" min="0.1" max="0.9" value="0.5" step="0.05" />
+        </div>
+      </div>
+      <div class="code-box" id="code-cm"></div>
+    </div>
+  </section>
+
+  <!-- 7. PRACTICE QUIZ -->
+  <section id="quiz" class="tab">
+    <div class="card quiz-wrap">
+      <h2>Endless Practice Quiz</h2>
+      <p class="desc">Test your intuition on Probability, Z-scores, Bayes' Theorem, Dot Product, and Power Rule.</p>
+      <div class="stat-grid">
+        <div class="stat"><div class="label">Score</div><div class="num" id="q-score" style="color:var(--green)">0 / 0</div></div>
+        <div class="stat"><div class="label">Topic</div><div class="num" id="q-topic" style="color:var(--blue)">Z-Score</div></div>
+      </div>
+      <div class="quiz-q" id="q-text">Loading question...</div>
+      <div class="quiz-input-row">
+        <input type="text" id="q-ans" placeholder="Type your answer (e.g., 2, 0.5, 3x^2)..." />
+        <button class="btn" id="q-check">Check</button>
+        <button class="btn secondary" id="q-next">Next Question</button>
+      </div>
+      <div class="feedback" id="q-fb"></div>
+    </div>
+  </section>
+
+  <!-- 8. ML PIPELINE BUILDER -->
+  <section id="pipe" class="tab">
+    <div class="card">
+      <h2>ML Pipeline Builder + Math Behind Each Step</h2>
+      <p class="desc">Pick a real-world example, a scaler, and a model. Watch the <b>Pipeline flow</b>, the <b>step-by-step math</b>, and the <b>Python code</b> update live!</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <select id="p-ex" style="background:#0d1117;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;">
+          <option value="loan">Example 1: Loan Approval (Classification)</option>
+          <option value="house">Example 2: House Prices (Regression)</option>
+          <option value="spam">Example 3: Spam Filter (Bayes)</option>
+        </select>
+        <select id="p-scaler" style="background:#0d1117;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;">
+          <option value="StandardScaler">StandardScaler (Z-Score)</option>
+          <option value="MinMaxScaler">MinMaxScaler (0 to 1)</option>
+        </select>
+        <select id="p-model" style="background:#0d1117;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;">
+          <option value="LogisticRegression">LogisticRegression</option>
+          <option value="GaussianNB">GaussianNB (Bayes)</option>
+          <option value="RandomForestClassifier">RandomForestClassifier</option>
+          <option value="LinearRegression">LinearRegression</option>
+        </select>
+      </div>
+      <div id="p-flow" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:12px; background:#090c10; border:1px solid var(--border); border-radius:8px; font-family:monospace; font-size:0.85rem;"></div>
+      <div id="p-math" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+    <div class="card">
+      <h2>Live Python Pipeline Code</h2>
+      <p class="desc">Notice how every step plugs cleanly into <b>Pipeline([...])</b>—no Data Leakage!</p>
+      <div class="code-box" id="code-pipe"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// --- Navigation ---
+document.querySelectorAll('#nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ==================== 1. BELL CURVE ====================
+const bellVal = document.getElementById('bell-val');
+const bellMean = document.getElementById('bell-mean');
+const bellSd = document.getElementById('bell-sd');
+
+function drawBell() {
+  const val = +bellVal.value, mean = +bellMean.value, sd = +bellSd.value;
+  document.getElementById('bell-val-t').textContent = val;
+  document.getElementById('bell-mean-t').textContent = mean;
+  document.getElementById('bell-sd-t').textContent = sd;
+
+  const z = (val - mean) / sd;
+  const az = Math.abs(z);
+  document.getElementById('bell-z').textContent = (z >= 0 ? '+' : '') + z.toFixed(2);
+  document.getElementById('bell-zone').textContent =
+    az <= 1 ? 'Within 1 SD (68%)' : az <= 2 ? 'Within 2 SD (95%)' : az <= 3 ? 'Within 3 SD (99.7%)' : 'Beyond 3 SD (0.3%)';
+  const st = document.getElementById('bell-status');
+  st.textContent = az > 3 ? 'Outlier!' : az > 2 ? 'Rare' : 'Normal';
+  st.style.color = az > 3 ? 'var(--red)' : az > 2 ? 'var(--gold)' : 'var(--green)';
+
+  const c = document.getElementById('c-bell'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const padX = 40, baseY = 270, maxH = 210;
+  const minX = mean - 4 * sd, maxX = mean + 4 * sd;
+  const toX = x => padX + ((x - minX) / (maxX - minX)) * (c.width - 2 * padX);
+  const pdf = x => Math.exp(-0.5 * Math.pow((x - mean) / sd, 2));
+
+  // Shaded SD bands
+  [[3, 'rgba(88,196,221,0.08)'], [2, 'rgba(88,196,221,0.14)'], [1, 'rgba(88,196,221,0.22)']].forEach(([k, col]) => {
+    ctx.beginPath();
+    ctx.moveTo(toX(mean - k * sd), baseY);
+    for (let i = 0; i <= 120; i++) {
+      const x = (mean - k * sd) + (2 * k * sd) * (i / 120);
+      ctx.lineTo(toX(x), baseY - pdf(x) * maxH);
+    }
+    ctx.lineTo(toX(mean + k * sd), baseY);
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+  });
+
+  // Curve line
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const x = minX + (maxX - minX) * (i / 200);
+    const px = toX(x), py = baseY - pdf(x) * maxH;
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#58c4dd';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Axis & ticks
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padX, baseY); ctx.lineTo(c.width - padX, baseY); ctx.stroke();
+  ctx.fillStyle = '#8b949e'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  for (let k = -3; k <= 3; k++) {
+    const px = toX(mean + k * sd);
+    ctx.fillText(k === 0 ? 'Mean' : (k > 0 ? `+${k}SD` : `${k}SD`), px, baseY + 18);
+    ctx.fillText(Math.round(mean + k * sd), px, baseY + 34);
+  }
+
+  // Value pin
+  const vx = Math.max(padX, Math.min(c.width - padX, toX(val)));
+  const vy = baseY - pdf(val) * maxH;
+  ctx.strokeStyle = '#f0ac5f'; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(vx, baseY); ctx.lineTo(vx, vy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f0ac5f';
+  ctx.beginPath(); ctx.arc(vx, vy, 7, 0, Math.PI * 2); ctx.fill();
+
+  document.getElementById('code-bell').innerHTML =
+`<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+
+<span class="cm"># Formula: z = (value - mean) / sd</span>
+value = <span class="num-c">${val}</span>
+mean  = <span class="num-c">${mean}</span>
+sd    = <span class="num-c">${sd}</span>
+
+z_score = (value - mean) / sd
+<span class="fn">print</span>(<span class="str">f"Z-score: {z_score:.2f}"</span>)  <span class="cm"># ${z.toFixed(2)}</span>`;
+}
+[bellVal, bellMean, bellSd].forEach(el => el.addEventListener('input', drawBell));
+drawBell();
+
+// ==================== 2. BAYES ====================
+const bPrev = document.getElementById('b-prev');
+const bSens = document.getElementById('b-sens');
+const bFpr = document.getElementById('b-fpr');
+
+function drawBayes() {
+  const prev = +bPrev.value / 100, sens = +bSens.value / 100, fpr = +bFpr.value / 100;
+  document.getElementById('b-prev-t').textContent = bPrev.value + '%';
+  document.getElementById('b-sens-t').textContent = bSens.value + '%';
+  document.getElementById('b-fpr-t').textContent = bFpr.value + '%';
+
+  const sick = Math.round(1000 * prev);
+  const healthy = 1000 - sick;
+  const tp = Math.round(sick * sens);
+  const fn = sick - tp;
+  const fp = Math.round(healthy * fpr);
+  const prob = (tp + fp) > 0 ? (tp / (tp + fp)) * 100 : 0;
+
+  document.getElementById('b-tp').textContent = tp;
+  document.getElementById('b-fp').textContent = fp;
+  document.getElementById('b-prob').textContent = prob.toFixed(1) + '%';
+
+  const c = document.getElementById('c-bayes'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const cols = 40, rows = 25;
+  const cellW = (c.width - 40) / cols, cellH = (c.height - 30) / rows;
+  for (let i = 0; i < 1000; i++) {
+    const r = Math.floor(i / cols), col = i % cols;
+    const x = 25 + col * cellW, y = 20 + r * cellH;
+    let color = '#21262d';
+    if (i < tp) color = '#fc6255';
+    else if (i < tp + fn) color = '#5c2828';
+    else if (i < tp + fn + fp) color = '#f0ac5f';
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  document.getElementById('code-bayes').innerHTML =
+`<span class="cm"># 1,000 people simulation</span>
+sick = <span class="num-c">${sick}</span>
+healthy = <span class="num-c">${healthy}</span>
+
+caught = <span class="num-c">${tp}</span>        <span class="cm"># ${bSens.value}% of ${sick} sick</span>
+false_alarm = <span class="num-c">${fp}</span>  <span class="cm"># ${bFpr.value}% of ${healthy} healthy</span>
+
+prob = caught / (caught + false_alarm)
+<span class="fn">print</span>(<span class="str">f"P(Sick | Positive) = {prob:.1%}"</span>)  <span class="cm"># ${prob.toFixed(1)}%</span>`;
+}
+[bPrev, bSens, bFpr].forEach(el => el.addEventListener('input', drawBayes));
+drawBayes();
+
+// ==================== 3. GRADIENT DESCENT ====================
+let gw = -2.0, gTimer = null;
+const gLr = document.getElementById('g-lr');
+
+function drawGrad() {
+  const lr = +gLr.value;
+  document.getElementById('g-lr-t').textContent = lr.toFixed(2);
+  const loss = Math.pow(gw - 3, 2);
+  const slope = 2 * (gw - 3);
+  document.getElementById('g-w').textContent = gw.toFixed(2);
+  document.getElementById('g-slope').textContent = slope.toFixed(2);
+  document.getElementById('g-loss').textContent = loss.toFixed(2);
+
+  const c = document.getElementById('c-grad'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const toX = w => 40 + ((w + 3) / 12) * (c.width - 80);
+  const toY = l => 280 - (l / 36) * 240;
+
+  // Parabola
+  ctx.beginPath();
+  for (let i = 0; i <= 150; i++) {
+    const w = -3 + 12 * (i / 150);
+    const px = toX(w), py = toY(Math.pow(w - 3, 2));
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#58c4dd'; ctx.lineWidth = 3; ctx.stroke();
+
+  // Minimum marker
+  ctx.fillStyle = '#83c167';
+  ctx.beginPath(); ctx.arc(toX(3), toY(0), 6, 0, Math.PI * 2); ctx.fill();
+  ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('Best w = 3 (Slope = 0)', toX(3), toY(0) + 22);
+
+  // Tangent line
+  const bx = toX(gw), by = toY(loss);
+  ctx.strokeStyle = '#fc6255'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(toX(gw - 1.2), toY(loss - slope * 1.2));
+  ctx.lineTo(toX(gw + 1.2), toY(loss + slope * 1.2));
+  ctx.stroke();
+
+  // Ball
+  ctx.fillStyle = '#f0ac5f';
+  ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill();
+
+  document.getElementById('code-grad').innerHTML =
+`<span class="cm"># Loss = (w - 3)^2  ->  Derivative (slope) = 2 * (w - 3)</span>
+w = <span class="num-c">${gw.toFixed(2)}</span>
+lr = <span class="num-c">${lr.toFixed(2)}</span>
+
+slope = <span class="num-c">2</span> * (w - <span class="num-c">3</span>)    <span class="cm"># ${slope.toFixed(2)}</span>
+w = w - lr * slope     <span class="cm"># Step downhill -> ${(gw - lr * slope).toFixed(2)}</span>`;
+}
+function stepGrad() {
+  const lr = +gLr.value;
+  gw = gw - lr * (2 * (gw - 3));
+  if (Math.abs(gw) > 10) gw = Math.sign(gw) * 10;
+  drawGrad();
+}
+document.getElementById('g-step').addEventListener('click', stepGrad);
+document.getElementById('g-reset').addEventListener('click', () => { clearInterval(gTimer); gTimer = null; gw = -2.0; drawGrad(); });
+document.getElementById('g-auto').addEventListener('click', () => {
+  if (gTimer) { clearInterval(gTimer); gTimer = null; return; }
+  gTimer = setInterval(() => {
+    stepGrad();
+    if (Math.abs(gw - 3) < 0.02) { clearInterval(gTimer); gTimer = null; }
+  }, 250);
+});
+gLr.addEventListener('input', drawGrad);
+drawGrad();
+
+// ==================== 4. DOT PRODUCT ====================
+const dx1 = document.getElementById('d-x1'), dx2 = document.getElementById('d-x2');
+const dw1 = document.getElementById('d-w1'), dw2 = document.getElementById('d-w2');
+
+function drawDot() {
+  const x1 = +dx1.value, x2 = +dx2.value, w1 = +dw1.value, w2 = +dw2.value;
+  document.getElementById('d-x1-t').textContent = x1;
+  document.getElementById('d-x2-t').textContent = x2;
+  document.getElementById('d-w1-t').textContent = w1.toFixed(2);
+  document.getElementById('d-w2-t').textContent = w2;
+
+  const p1 = x1 * w1, p2 = x2 * w2, sum = p1 + p2;
+  document.getElementById('d-p1').textContent = p1.toFixed(1);
+  document.getElementById('d-p2').textContent = p2.toFixed(1);
+  document.getElementById('d-sum').textContent = '$' + sum.toFixed(1) + 'k';
+
+  const c = document.getElementById('c-dot'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  // Draw neuron diagram
+  const drawNode = (x, y, r, col, label, sub) => {
+    ctx.fillStyle = '#161b22'; ctx.strokeStyle = col; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(label, x, y + 5);
+    ctx.fillStyle = '#8b949e'; ctx.font = '12px sans-serif';
+    ctx.fillText(sub, x, y + r + 18);
+  };
+
+  // Lines
+  ctx.strokeStyle = '#58c4dd'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(150, 95); ctx.lineTo(480, 160); ctx.stroke();
+  ctx.strokeStyle = '#b392f0'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(150, 225); ctx.lineTo(480, 160); ctx.stroke();
+
+  // Weight labels
+  ctx.fillStyle = '#f0ac5f'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`× w1 (${w1.toFixed(2)}) = ${p1.toFixed(1)}`, 310, 108);
+  ctx.fillText(`× w2 (${w2}) = ${p2.toFixed(1)}`, 310, 218);
+
+  drawNode(120, 95, 34, '#58c4dd', x1, 'Size (sq ft)');
+  drawNode(120, 225, 34, '#b392f0', x2, 'Bedrooms');
+  drawNode(520, 160, 44, '#83c167', '$' + sum.toFixed(0) + 'k', 'Predicted Price');
+
+  document.getElementById('code-dot').innerHTML =
+`<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+house   = np.array([<span class="num-c">${x1}</span>, <span class="num-c">${x2}</span>])
+weights = np.array([<span class="num-c">${w1.toFixed(2)}</span>, <span class="num-c">${w2}</span>])
+
+price = np.dot(house, weights)
+<span class="fn">print</span>(<span class="str">f"Predicted: \${price:.1f}k"</span>)  <span class="cm"># \$${sum.toFixed(1)}k</span>`;
+}
+[dx1, dx2, dw1, dw2].forEach(el => el.addEventListener('input', drawDot));
+drawDot();
+
+// ==================== 5. LINEAR REGRESSION ====================
+const regPts = [[1,3.2],[2,5.1],[3,6.8],[4,9.5],[5,11.0],[6,13.4],[7,14.8]];
+const rM = document.getElementById('r-m'), rB = document.getElementById('r-b');
+
+function drawReg() {
+  const m = +rM.value, b = +rB.value;
+  document.getElementById('r-m-t').textContent = m.toFixed(1);
+  document.getElementById('r-b-t').textContent = b.toFixed(1);
+
+  let mse = 0;
+  regPts.forEach(([x, y]) => { mse += Math.pow(y - (m * x + b), 2); });
+  mse /= regPts.length;
+  document.getElementById('r-mse').textContent = mse.toFixed(2);
+
+  const c = document.getElementById('c-reg'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const toX = x => 50 + (x / 8) * (c.width - 90);
+  const toY = y => 280 - (y / 18) * 240;
+
+  // Grid
+  ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(50, 280); ctx.lineTo(c.width - 40, 280); ctx.moveTo(50, 40); ctx.lineTo(50, 280); ctx.stroke();
+
+  // Line
+  ctx.strokeStyle = '#f0ac5f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(toX(0), toY(b)); ctx.lineTo(toX(8), toY(m * 8 + b)); ctx.stroke();
+
+  // Errors & points
+  regPts.forEach(([x, y]) => {
+    const px = toX(x), py = toY(y), predY = toY(m * x + b);
+    ctx.strokeStyle = 'rgba(252,98,85,0.7)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, predY); ctx.stroke();
+    ctx.fillStyle = '#58c4dd';
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+  });
+
+  document.getElementById('code-reg').innerHTML =
+`<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression
+
+<span class="cm"># Your line: y = ${m.toFixed(1)}*x + ${b.toFixed(1)}</span>
+<span class="cm"># Current MSE (Loss): ${mse.toFixed(2)}</span>
+model = LinearRegression()
+model.fit(X_train, y_train)`;
+}
+document.getElementById('r-fit').addEventListener('click', () => { rM.value = 2.0; rB.value = 1.1; drawReg(); });
+[rM, rB].forEach(el => el.addEventListener('input', drawReg));
+drawReg();
+
+// ==================== 6. PRECISION & RECALL ====================
+const cmData = [
+  [0.12,0],[0.18,0],[0.24,0],[0.31,0],[0.35,0],[0.42,0],[0.48,0],[0.56,0],[0.64,0],
+  [0.38,1],[0.46,1],[0.54,1],[0.62,1],[0.71,1],[0.78,1],[0.85,1],[0.91,1]
+];
+const cmTh = document.getElementById('cm-th');
+
+function drawCM() {
+  const th = +cmTh.value;
+  document.getElementById('cm-th-t').textContent = th.toFixed(2);
+  let tp = 0, fp = 0, fn = 0;
+  cmData.forEach(([p, y]) => {
+    const pred = p >= th ? 1 : 0;
+    if (pred === 1 && y === 1) tp++;
+    if (pred === 1 && y === 0) fp++;
+    if (pred === 0 && y === 1) fn++;
+  });
+  const prec = (tp + fp) ? (tp / (tp + fp)) * 100 : 0;
+  const rec = (tp + fn) ? (tp / (tp + fn)) * 100 : 0;
+  document.getElementById('cm-prec').textContent = prec.toFixed(0) + '%';
+  document.getElementById('cm-rec').textContent = rec.toFixed(0) + '%';
+  document.getElementById('cm-counts').textContent = `${tp} / ${fp} / ${fn}`;
+
+  const c = document.getElementById('c-cm'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const toX = p => 40 + p * (c.width - 80);
+
+  // Threshold line
+  const tx = toX(th);
+  ctx.strokeStyle = '#f0ac5f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(tx, 30); ctx.lineTo(tx, 280); ctx.stroke();
+  ctx.fillStyle = '#f0ac5f'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`Threshold = ${th.toFixed(2)}`, tx, 22);
+
+  cmData.forEach(([p, y], idx) => {
+    const x = toX(p), cy = y === 1 ? 110 : 210;
+    ctx.fillStyle = y === 1 ? '#83c167' : '#fc6255';
+    ctx.beginPath(); ctx.arc(x, cy + (idx % 2 ? -10 : 10), 8, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.fillStyle = '#8b949e'; ctx.textAlign = 'left';
+  ctx.fillText('Actual Positive (1)', 20, 75);
+  ctx.fillText('Actual Negative (0)', 20, 260);
+
+  document.getElementById('code-cm').innerHTML =
+`<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+
+probs = pipe.predict_proba(X_test)[:, <span class="num-c">1</span>]
+y_pred = (probs >= <span class="num-c">${th.toFixed(2)}</span>).astype(<span class="fn">int</span>)
+<span class="fn">print</span>(classification_report(y_test, y_pred))`;
+}
+cmTh.addEventListener('input', drawCM);
+drawCM();
+
+// ==================== 7. PRACTICE QUIZ ====================
+let qCorrect = 0, qTotal = 0, curQ = null;
+function genQuiz() {
+  const type = Math.floor(Math.random() * 4);
+  if (type === 0) {
+    const mean = [50, 60, 100][Math.floor(Math.random()*3)];
+    const sd = [5, 10][Math.floor(Math.random()*2)];
+    const z = [-2, -1, 1, 2, 3][Math.floor(Math.random()*5)];
+    const val = mean + z * sd;
+    curQ = { topic: 'Z-Score', text: `Mean = ${mean}, SD = ${sd}. What is the z-score for ${val}?`, ans: String(z), explain: `(${val} - ${mean}) / ${sd} = ${z}` };
+  } else if (type === 1) {
+    const a = [Math.floor(Math.random()*5)+1, Math.floor(Math.random()*5)+1];
+    const b = [Math.floor(Math.random()*5)+1, Math.floor(Math.random()*5)+1];
+    const dot = a[0]*b[0] + a[1]*b[1];
+    curQ = { topic: 'Dot Product', text: `What is the dot product of [${a[0]}, ${a[1]}] and [${b[0]}, ${b[1]}]?`, ans: String(dot), explain: `(${a[0]}×${b[0]}) + (${a[1]}×${b[1]}) = ${dot}` };
+  } else if (type === 2) {
+    const n = [2, 3, 4, 5][Math.floor(Math.random()*4)];
+    const ans = n === 2 ? '2x' : `${n}x^${n-1}`;
+    curQ = { topic: 'Power Rule', text: `What is the derivative of x^${n}?`, ans, explain: `Bring ${n} to the front and subtract 1 from the exponent → ${ans}` };
+  } else {
+    const tp = [10, 20, 40, 50][Math.floor(Math.random()*4)];
+    const fp = tp;
+    curQ = { topic: 'Bayes', text: `A test catches ${tp} sick people and gives ${fp} false alarms. What is P(Sick | Positive) as a decimal?`, ans: '0.5', explain: `${tp} / (${tp} + ${fp}) = 0.5 (50%)` };
+  }
+  document.getElementById('q-topic').textContent = curQ.topic;
+  document.getElementById('q-text').textContent = curQ.text;
+  document.getElementById('q-ans').value = '';
+  const fb = document.getElementById('q-fb');
+  fb.className = 'feedback'; fb.textContent = '';
+}
+document.getElementById('q-check').addEventListener('click', () => {
+  const u = document.getElementById('q-ans').value.trim().toLowerCase().replace(/\s+/g, '');
+  if (!u) return;
+  qTotal++;
+  const fb = document.getElementById('q-fb');
+  if (u === curQ.ans || (curQ.ans === '0.5' && (u === '.5' || u === '50%' || u === '1/2'))) {
+    qCorrect++;
+    fb.className = 'feedback ok';
+    fb.textContent = 'Correct! ' + curQ.explain;
+  } else {
+    fb.className = 'feedback err';
+    fb.textContent = `Not quite! Answer: ${curQ.ans} — ${curQ.explain}`;
+  }
+  document.getElementById('q-score').textContent = `${qCorrect} / ${qTotal}`;
+});
+document.getElementById('q-next').addEventListener('click', genQuiz);
+genQuiz();
+
+// ==================== 8. ML PIPELINE BUILDER ====================
+const pEx = document.getElementById('p-ex');
+const pScaler = document.getElementById('p-scaler');
+const pModel = document.getElementById('p-model');
+
+const pipeExamples = {
+  loan: {
+    csv: "loan_data.csv", target: "approved",
+    numCols: ["income", "credit_score"], catCols: ["city"],
+    rawSample: "income=NaN, credit_score=740, city='Mumbai'",
+    imputed: "income=65000 (median), credit_score=740, city='Mumbai'",
+    stdMath: "(740 - 670) / 70 = +1.00  |  Mumbai -> [1, 0, 0]",
+    mmMath: "(740 - 520) / (820 - 520) = 0.73  |  Mumbai -> [1, 0, 0]",
+    outDesc: "Prediction: 1 (Approved, 84% probability)"
+  },
+  house: {
+    csv: "houses.csv", target: "price",
+    numCols: ["size_sqft", "bedrooms"], catCols: ["city"],
+    rawSample: "size_sqft=1500, bedrooms=3, city='Delhi'",
+    imputed: "No blanks -> size_sqft=1500, bedrooms=3, city='Delhi'",
+    stdMath: "(1500 - 1500) / 500 = 0.00  |  Delhi -> [0, 1, 0]",
+    mmMath: "(1500 - 1000) / (2000 - 1000) = 0.50  |  Delhi -> [0, 1, 0]",
+    outDesc: "Prediction: $300k (Dot Product: w1*x1 + w2*x2 + b)"
+  },
+  spam: {
+    csv: "emails.csv", target: "is_spam",
+    numCols: ["free_word_count", "links_count"], catCols: ["sender_domain"],
+    rawSample: "free_word_count=3, links_count=5, domain='promo.xyz'",
+    imputed: "No blanks -> free_word_count=3, links_count=5",
+    stdMath: "(3 - 1) / 1 = +2.00 (2 SD above normal!)",
+    mmMath: "(3 - 0) / (5 - 0) = 0.60",
+    outDesc: "Prediction: 1 (Spam, P(Spam | Clues) = 91%)"
+  }
+};
+
+const modelMath = {
+  LogisticRegression: "Dot product z = w·x + b → Sigmoid 1/(1+e^-z) turns it into 0%–100% probability, trained via Gradient Descent.",
+  GaussianNB: "Bayes' Theorem: P(Class | Features) ∝ P(Features | Class) × P(Class) using Bell Curve probabilities.",
+  RandomForestClassifier: "Builds 100 Decision Trees on random subsets and takes the majority vote!",
+  LinearRegression: "Dot product y = w1·x1 + w2·x2 + b, minimizing Mean Squared Error via Gradient Descent."
+};
+
+const modelImport = {
+  LogisticRegression: "from sklearn.linear_model import LogisticRegression",
+  GaussianNB: "from sklearn.naive_bayes import GaussianNB",
+  RandomForestClassifier: "from sklearn.ensemble import RandomForestClassifier",
+  LinearRegression: "from sklearn.linear_model import LinearRegression"
+};
+
+function drawPipe() {
+  const ex = pipeExamples[pEx.value];
+  const sc = pScaler.value;
+  const md = pModel.value;
+
+  const badge = (txt, col) => `<span style="padding:6px 10px;border-radius:6px;border:1px solid ${col};color:${col};background:#161b22;">${txt}</span>`;
+  document.getElementById('p-flow').innerHTML =
+    badge("1. Split (80/20)", "#8b949e") + " → " +
+    badge("2. SimpleImputer", "#f0ac5f") + " → " +
+    badge("3. " + sc, "#58c4dd") + " → " +
+    badge("4. OneHotEncoder", "#b392f0") + " → " +
+    badge("5. " + md, "#83c167");
+
+  const mathSteps = [
+    ["Step 1 — Split First (No Data Leakage)", `Raw row: ${ex.rawSample}. Always run train_test_split BEFORE fitting imputer/scaler!`],
+    ["Step 2 — SimpleImputer (Fill Blanks)", `Replaces NaN with training median → ${ex.imputed}`],
+    ["Step 3 — " + sc + " + OneHotEncoder", sc === "StandardScaler" ? ex.stdMath : ex.mmMath],
+    ["Step 4 — " + md + " (Math)", modelMath[md]],
+    ["Step 5 — Final Output", ex.outDesc]
+  ];
+  document.getElementById('p-math').innerHTML = mathSteps.map(([t, d]) =>
+    `<div style="background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+      <div style="font-size:0.84rem;font-weight:700;color:var(--gold);">${t}</div>
+      <div style="font-size:0.84rem;color:var(--text);margin-top:3px;">${d}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('code-pipe').innerHTML =
+`<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.compose <span class="kw">import</span> ColumnTransformer
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.impute <span class="kw">import</span> SimpleImputer
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> ${sc}, OneHotEncoder
+${modelImport[md]}
+
+df = pd.read_csv(<span class="str">"${ex.csv}"</span>)
+X = df.drop(columns=[<span class="str">"${ex.target}"</span>])
+y = df[<span class="str">"${ex.target}"</span>]
+
+<span class="cm"># 1. Always split FIRST!</span>
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="num-c">0.2</span>, random_state=<span class="num-c">42</span>)
+
+<span class="cm"># 2. Number & Text pipelines</span>
+num_pipe = Pipeline([(<span class="str">"imp"</span>, SimpleImputer(strategy=<span class="str">"median"</span>)), (<span class="str">"sc"</span>, ${sc}())])
+cat_pipe = Pipeline([(<span class="str">"imp"</span>, SimpleImputer(strategy=<span class="str">"most_frequent"</span>)), (<span class="str">"ohe"</span>, OneHotEncoder(handle_unknown=<span class="str">"ignore"</span>))])
+
+prep = ColumnTransformer([
+    (<span class="str">"num"</span>, num_pipe, ${JSON.stringify(ex.numCols)}),
+    (<span class="str">"cat"</span>, cat_pipe, ${JSON.stringify(ex.catCols)})
+])
+
+<span class="cm"># 3. Full ML Pipeline</span>
+full_pipe = Pipeline([(<span class="str">"prep"</span>, prep), (<span class="str">"model"</span>, ${md}())])
+full_pipe.fit(X_train, y_train)
+<span class="fn">print</span>(<span class="str">"Score:"</span>, full_pipe.score(X_test, y_test))`;
+}
+[pEx, pScaler, pModel].forEach(el => el.addEventListener('change', drawPipe));
+drawPipe();
+</script>
+</body>
+</html>

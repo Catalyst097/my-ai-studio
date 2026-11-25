@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pandas &amp; MySQL Syntax Studio</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --blue: #58c4dd;
+    --gold: #f0ac5f;
+    --green: #83c167;
+    --red: #fc6255;
+    --purple: #b392f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0b0e14;
+  }
+  header h1 { font-size: 1.25rem; font-weight: 600; }
+  header h1 span { color: var(--blue); }
+  header .sub { font-size: 0.84rem; color: var(--muted); }
+  .suite-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .suite-nav a {
+    text-decoration: none; font-size: 0.82rem; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+  }
+  .suite-nav a:hover { color: var(--text); border-color: var(--blue); }
+  .suite-nav a.cur { background: rgba(88,196,221,0.16); color: var(--blue); border-color: var(--blue); }
+
+  nav {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  nav button:hover { color: var(--text); background: #21262d; }
+  nav button.active { color: var(--bg); background: var(--blue); font-weight: 600; }
+
+  main {
+    flex: 1;
+    padding: 22px;
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .tab { display: none; }
+  .tab.active { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+  @media (max-width: 900px) { .tab.active { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card h2 { font-size: 1rem; color: var(--blue); }
+  .card h3 { font-size: 0.88rem; color: var(--gold); margin-top: 4px; }
+  .desc { font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+
+  .topic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 620px;
+    overflow-y: auto;
+  }
+  .topic-btn {
+    text-align: left;
+    background: #0d1117;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.12s;
+  }
+  .topic-btn:hover { border-color: var(--blue); }
+  .topic-btn.active {
+    background: rgba(88,196,221,0.16);
+    border-color: var(--blue);
+    color: var(--blue);
+    font-weight: 600;
+  }
+
+  .code-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 780px) { .code-grid { grid-template-columns: 1fr; } }
+
+  .code-panel {
+    background: #090c10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .code-title {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+  }
+  .code-title.pd { color: var(--blue); background: rgba(88,196,221,0.08); }
+  .code-title.sql { color: var(--gold); background: rgba(240,172,95,0.08); }
+  .code-box {
+    padding: 12px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    color: #c9d1d9;
+  }
+
+  .tables-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 780px) { .tables-grid { grid-template-columns: 1fr; } }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    background: #090c10;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th { background: #1c2128; color: var(--blue); }
+  tr.hl td { background: rgba(131,193,103,0.16); color: var(--green); }
+  tr.warn td { background: rgba(252,98,85,0.16); color: var(--red); }
+  td.null-cell { color: var(--red); font-style: italic; }
+
+  .tip-box {
+    background: rgba(179,146,240,0.1);
+    border: 1px solid var(--purple);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: #e6edf3;
+    line-height: 1.45;
+  }
+  .tip-box b { color: var(--purple); }
+
+  /* Drill tab */
+  .drill-wrap { grid-column: 1 / -1; max-width: 780px; width: 100%; margin: 0 auto; }
+  .drill-input {
+    width: 100%;
+    background: #090c10;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.95rem;
+  }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    background: var(--blue);
+    color: #0d1117;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+  .btn.secondary { background: #21262d; color: var(--text); border: 1px solid var(--border); }
+  .feedback { padding: 12px; border-radius: 8px; font-size: 0.88rem; display: none; font-family: monospace; white-space: pre-wrap; }
+  .feedback.ok { display: block; background: rgba(131,193,103,0.15); border: 1px solid var(--green); color: var(--green); }
+  .feedback.err { display: block; background: rgba(252,98,85,0.15); border: 1px solid var(--red); color: var(--red); }
+  .feedback.hint { display: block; background: rgba(240,172,95,0.15); border: 1px solid var(--gold); color: var(--gold); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>Pandas &amp; MySQL</span> Syntax Studio</h1>
+    <div class="sub">Click any topic → see live Input vs. Output table + side-by-side Pandas &amp; MySQL syntax</div>
+  </div>
+  <div class="suite-nav">
+    <a href="ml_studio.html">ML Math</a>
+    <a href="pandas_sql_studio.html" class="cur">Pandas &amp; SQL</a>
+    <a href="algo_studio.html">DSA Studio</a>
+    <a href="py_algolab.html">PyAlgoLab</a>
+  </div>
+</header>
+
+<nav id="nav">
+  <button class="active" data-tab="t1">1. Filtering, Cleaning &amp; Columns</button>
+  <button data-tab="t2">2. GroupBy, Ranking &amp; Windows</button>
+  <button data-tab="t3">3. Merge, Join &amp; Concat</button>
+  <button data-tab="t4">4. Syntax Recall Drill</button>
+</nav>
+
+<main>
+  <!-- TAB 1: FILTERING & CLEANING -->
+  <section id="t1" class="tab active">
+    <div class="card">
+      <h2>Pick a Concept</h2>
+      <div class="topic-list" id="list-t1"></div>
+    </div>
+    <div class="card" id="view-t1"></div>
+  </section>
+
+  <!-- TAB 2: GROUPBY & WINDOWS -->
+  <section id="t2" class="tab">
+    <div class="card">
+      <h2>Pick a Concept</h2>
+      <div class="topic-list" id="list-t2"></div>
+    </div>
+    <div class="card" id="view-t2"></div>
+  </section>
+
+  <!-- TAB 3: MERGE & JOIN -->
+  <section id="t3" class="tab">
+    <div class="card">
+      <h2>Pick a Concept</h2>
+      <div class="topic-list" id="list-t3"></div>
+    </div>
+    <div class="card" id="view-t3"></div>
+  </section>
+
+  <!-- TAB 4: SYNTAX RECALL DRILL -->
+  <section id="t4" class="tab">
+    <div class="card drill-wrap">
+      <h2>Syntax Recall Drill (Muscle Memory)</h2>
+      <p class="desc">Type the exact Pandas or MySQL syntax from memory. Stuck? Click <b>Show Hint</b>!</p>
+      <div style="display:flex; gap:16px; font-size:0.9rem; flex-wrap:wrap;">
+        <span>Score: <b id="d-score" style="color:var(--green)">0 / 0</b></span>
+        <span>Mode: <b id="d-lang" style="color:var(--gold)">Pandas</b></span>
+        <span>Missed Pool: <b id="d-missed-cnt" style="color:var(--red)">0</b></span>
+        <span>Question: <b id="d-progress" style="color:var(--blue)">1 / 20</b></span>
+      </div>
+      <div id="d-prompt" style="font-size:1.08rem; line-height:1.5; margin:6px 0;"></div>
+      <input id="d-input" class="drill-input" placeholder="Type syntax here..." />
+      <div class="btn-row">
+        <button class="btn" id="d-check">Check Syntax</button>
+        <button class="btn secondary" id="d-hint">Show Hint</button>
+        <button class="btn secondary" id="d-next">Next Drill</button>
+        <button class="btn secondary" id="d-retry-mode">Retry Missed Only: OFF</button>
+      </div>
+      <div id="d-fb" class="feedback"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// --- Sample Employee Table ---
+const empCols = ["id", "name", "dept", "salary", "city"];
+const empRows = [
+  [1, "Amit",  "Tech",  80, "Mumbai"],
+  [2, "Sara",  "Tech",  95, "Delhi"],
+  [3, "Raj",   "Sales", 60, "Mumbai"],
+  [4, "Neha",  "Sales", null, "Pune"],
+  [5, "Dev",   "Tech",  80, "Delhi"]
+];
+
+function renderTable(cols, rows, hlRows = [], warnRows = []) {
+  let h = '<table><thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const cls = warnRows.includes(i) ? 'warn' : hlRows.includes(i) ? 'hl' : '';
+    h += `<tr class="${cls}">` + r.map(v => v === null ? '<td class="null-cell">NULL/NaN</td>' : `<td>${v}</td>`).join('') + '</tr>';
+  });
+  return h + '</tbody></table>';
+}
+
+// ==================== TAB 1 DATA ====================
+const t1Data = [
+  { name: "⚡ Live Filter Playground", playground: "filter" },
+  {
+    name: "loc vs iloc",
+    desc: "loc uses LABELS (column/index names, inclusive end). iloc uses INTEGER positions (exclusive end, like Python slicing).",
+    pd: `# Label-based (rows 0 to 2 inclusive, column 'name')
+df.loc[0:2, ["name", "salary"]]
+
+# Position-based (first 2 rows, first 2 columns)
+df.iloc[0:2, 0:2]`,
+    sql: `-- SQL has no row index; use SELECT + LIMIT
+SELECT name, salary
+FROM employees
+LIMIT 3;`,
+    tip: "Memory hook: <b>l</b>oc = <b>l</b>abel, <b>i</b>loc = <b>i</b>nteger position.",
+    outCols: ["name", "salary"],
+    outRows: [["Amit", 80], ["Sara", 95], ["Raj", 60]],
+    hl: [0, 1, 2]
+  },
+  {
+    name: "Boolean Masks & (&, |, ~)",
+    desc: "Filter rows with conditions. Always wrap EACH condition in parentheses () because &, |, ~ have higher precedence than ==, >!",
+    pd: `# Tech AND salary >= 80
+mask = (df["dept"] == "Tech") & (df["salary"] >= 80)
+df[mask]
+
+# NOT Mumbai (~ flips True/False)
+df[~(df["city"] == "Mumbai")]`,
+    sql: `-- Tech AND salary >= 80
+SELECT * FROM employees
+WHERE dept = 'Tech' AND salary >= 80;
+
+-- NOT Mumbai
+SELECT * FROM employees
+WHERE NOT city = 'Mumbai';`,
+    tip: "In Pandas: use <b>&amp;</b> (not <code>and</code>), <b>|</b> (not <code>or</code>), <b>~</b> (not <code>not</code>), and ALWAYS wrap each condition in <b>( )</b>.",
+    outCols: empCols,
+    outRows: [empRows[0], empRows[1], empRows[4]],
+    hl: [0, 1, 4]
+  },
+  {
+    name: "isin(), isna(), notna()",
+    desc: "Check membership in a list, or find/remove missing values (NaN / NULL).",
+    pd: `# City is Mumbai or Delhi
+df[df["city"].isin(["Mumbai", "Delhi"])]
+
+# Find rows with missing salary
+df[df["salary"].isna()]
+
+# Keep rows with non-missing salary
+df[df["salary"].notna()]`,
+    sql: `-- City IN list
+SELECT * FROM employees
+WHERE city IN ('Mumbai', 'Delhi');
+
+-- NULL handling (NEVER use = NULL!)
+SELECT * FROM employees WHERE salary IS NULL;
+SELECT * FROM employees WHERE salary IS NOT NULL;`,
+    tip: "In MySQL, NEVER write <code>salary = NULL</code> — always use <b>IS NULL</b> or <b>IS NOT NULL</b>!",
+    outCols: empCols,
+    outRows: [empRows[3]],
+    hl: [3]
+  },
+  {
+    name: "Counting Trick: isna().sum()",
+    desc: "Because True = 1 and False = 0, calling .sum() on isna() counts missing values per column!",
+    pd: `# Count missing values in every column
+df.isna().sum()
+
+# Count missing in ONE column
+df["salary"].isna().sum()   # -> 1`,
+    sql: `-- Count NULLs in salary
+SELECT COUNT(*) - COUNT(salary) AS missing_salary
+FROM employees;`,
+    tip: "<code>df.isna().sum()</code> is the #1 command you run right after <code>pd.read_csv()</code>!",
+    outCols: ["column", "missing_count"],
+    outRows: [["id", 0], ["name", 0], ["dept", 0], ["salary", 1], ["city", 0]],
+    hl: [3]
+  },
+  {
+    name: "Assigning with loc & UPDATE",
+    desc: "Safely update specific cells matching a condition using df.loc[condition, col] = new_value.",
+    pd: `# Give Tech employees in Mumbai a raise to 90
+df.loc[(df["dept"] == "Tech") & (df["city"] == "Mumbai"), "salary"] = 90`,
+    sql: `UPDATE employees
+SET salary = 90
+WHERE dept = 'Tech' AND city = 'Mumbai';`,
+    tip: "Never chain brackets like <code>df[mask]['salary'] = 90</code> — always use <b>df.loc[mask, 'salary'] = 90</b>!",
+    outCols: empCols,
+    outRows: [[1, "Amit", "Tech", 90, "Mumbai"], empRows[1], empRows[2], empRows[3], empRows[4]],
+    hl: [0]
+  },
+  {
+    name: "Conditional Columns (Buckets / CASE WHEN)",
+    desc: "Create a new category column based on rules (e.g., High vs. Normal salary).",
+    pd: `import numpy as np
+
+# 2 choices: np.where
+df["band"] = np.where(df["salary"] >= 85, "High", "Normal")
+
+# Multiple buckets: np.select or pd.cut
+df["tier"] = pd.cut(df["salary"], bins=[0, 70, 90, 200], labels=["Low","Mid","High"])`,
+    sql: `SELECT name, salary,
+  CASE
+    WHEN salary >= 85 THEN 'High'
+    WHEN salary >= 60 THEN 'Normal'
+    ELSE 'Unknown'
+  END AS band
+FROM employees;`,
+    tip: "SQL's <b>CASE WHEN ... THEN ... ELSE ... END</b> is the exact twin of Pandas <b>np.where / np.select</b>!",
+    outCols: ["name", "salary", "band"],
+    outRows: [["Amit",80,"Normal"],["Sara",95,"High"],["Raj",60,"Normal"],["Neha",null,"Unknown"],["Dev",80,"Normal"]],
+    hl: [1]
+  },
+  {
+    name: "axis=0 vs axis=1",
+    desc: "axis=0 moves DOWN rows (column-wise summary). axis=1 moves ACROSS columns (row-wise summary).",
+    pd: `# axis=0 (default): mean of EACH column (moves down rows)
+df[["salary"]].mean(axis=0)
+
+# axis=1: drop a COLUMN or sum across a row
+df.drop("city", axis=1)`,
+    sql: `-- SQL aggregates (AVG, SUM) work down rows (axis=0)
+SELECT AVG(salary) AS avg_sal FROM employees;`,
+    tip: "Memory hook: <b>axis=0</b> collapses rows (vertical ↓), <b>axis=1</b> collapses columns (horizontal →).",
+    outCols: ["axis", "direction", "example"],
+    outRows: [["axis=0", "Down rows (↓)", "df.mean(axis=0) -> per column"], ["axis=1", "Across cols (→)", "df.drop('city', axis=1)"]],
+    hl: [0, 1]
+  },
+  {
+    name: ".str Methods, Regex & LIKE",
+    desc: "Clean and search text columns using .str in Pandas or LIKE in MySQL.",
+    pd: `# Lowercase & strip spaces
+df["name"].str.lower().str.strip()
+
+# Contains 'a' (case-insensitive)
+df[df["name"].str.contains("a", case=False, na=False)]
+
+# Basic regex: starts with A or S
+df[df["name"].str.contains("^[AS]", regex=True)]`,
+    sql: `-- LIKE: % = any chars, _ = 1 char
+SELECT * FROM employees
+WHERE name LIKE '%a%';
+
+-- Starts with A
+SELECT * FROM employees
+WHERE name LIKE 'A%';`,
+    tip: "In Pandas, always add <b>na=False</b> inside <code>.str.contains()</code> so NaN cells don't crash your filter!",
+    outCols: empCols,
+    outRows: [empRows[0], empRows[1]],
+    hl: [0, 1]
+  },
+  {
+    name: "DISTINCT, BETWEEN, ORDER BY, LIMIT",
+    desc: "Deduplicate values, filter ranges, sort results, and grab top N rows.",
+    pd: `# Unique cities (DISTINCT)
+df["city"].unique()
+
+# Salary BETWEEN 60 and 85
+df[df["salary"].between(60, 85)]
+
+# Sort descending + top 2 (ORDER BY + LIMIT)
+df.sort_values("salary", ascending=False).head(2)`,
+    sql: `SELECT DISTINCT city FROM employees;
+
+SELECT * FROM employees
+WHERE salary BETWEEN 60 AND 85
+ORDER BY salary DESC
+LIMIT 2;`,
+    tip: "<code>ORDER BY col DESC LIMIT 2</code> in SQL = <code>.sort_values('col', ascending=False).head(2)</code> in Pandas.",
+    outCols: empCols,
+    outRows: [empRows[1], empRows[0]],
+    hl: [0, 1]
+  },
+  {
+    name: "COALESCE, fillna() & drop_duplicates()",
+    desc: "Replace missing values (NULL / NaN) with a default value, and remove duplicate rows cleanly.",
+    pd: `# Fill NaN with 0 or median
+df["salary"] = df["salary"].fillna(0)
+
+# Drop duplicate rows (keep first or last)
+df.drop_duplicates(subset=["dept", "city"], keep="first")`,
+    sql: `-- Replace NULL with 0 in one line
+SELECT name, COALESCE(salary, 0) AS salary
+FROM employees;
+
+-- Remove duplicate combinations
+SELECT DISTINCT dept, city FROM employees;`,
+    tip: "<b>COALESCE(col, 0)</b> in MySQL is the exact twin of <b>col.fillna(0)</b> in Pandas!",
+    outCols: ["name", "salary (filled)"],
+    outRows: [["Amit",80],["Sara",95],["Raj",60],["Neha",0],["Dev",80]],
+    hl: [3]
+  },
+  {
+    name: "Regex & Replace (.str.replace / REGEXP)",
+    desc: "Clean messy strings (remove $, commas, spaces) or extract numbers/patterns using Regex.",
+    pd: `# Simple replace
+df["city"].str.replace("Mumbai", "BOM", regex=False)
+
+# Regex: remove everything except digits (e.g. "$1,200" -> "1200")
+df["price"].str.replace(r"[^0-9]", "", regex=True)
+
+# Regex: extract first number from text ("Order #42" -> "42")
+df["note"].str.extract(r"(\d+)")`,
+    sql: `-- Simple replace
+SELECT REPLACE(city, 'Mumbai', 'BOM') FROM employees;
+
+-- Regex replace (MySQL 8+): remove non-digits
+SELECT REGEXP_REPLACE(price, '[^0-9]', '') FROM orders;
+
+-- Regex match (starts with A or S)
+SELECT * FROM employees WHERE name REGEXP '^[AS]';`,
+    tip: "Most useful regex ever: <code>[^0-9]</code> means <b>anything NOT a digit</b> (great for stripping <code>$</code> and commas!).",
+    outCols: ["raw_price", "cleaned (regex)"],
+    outRows: [["$1,200", "1200"], ["₹850/-", "850"], ["$45.00", "4500"]],
+    hl: [0, 1, 2]
+  }
+];
+
+// ==================== TAB 2 DATA ====================
+const t2Data = [
+  { name: "⚡ Live GroupBy & Window Playground", playground: "group" },
+  {
+    name: "groupby + count() vs size()",
+    desc: "Split-Apply-Combine! Crucial trap: count() IGNORES NaN, while size() COUNTS NaN (total rows).",
+    pd: `# count() ignores NaN (Sales salary = 1!)
+df.groupby("dept")["salary"].count()
+
+# size() counts ALL rows including NaN (Sales = 2!)
+df.groupby("dept").size()`,
+    sql: `-- COUNT(col) ignores NULL, COUNT(*) includes NULL!
+SELECT dept,
+       COUNT(salary) AS non_null_cnt,
+       COUNT(*)      AS total_rows
+FROM employees
+GROUP BY dept;`,
+    tip: "Interview favorite! <b>count() / COUNT(col)</b> skips NULLs; <b>size() / COUNT(*)</b> counts every row.",
+    outCols: ["dept", "count(salary)", "size() / COUNT(*)"],
+    outRows: [["Tech", 3, 3], ["Sales", 1, 2]],
+    hl: [1]
+  },
+  {
+    name: "agg() vs transform() vs apply()",
+    desc: "agg() SHRINKS to 1 row per group. transform() KEEPS all original rows (broadcasts group result back!).",
+    pd: `# agg: shrinks to 2 rows (1 per dept)
+df.groupby("dept")["salary"].agg(["mean", "max"])
+
+# transform: keeps all 5 rows (adds dept avg to every row!)
+df["dept_avg"] = df.groupby("dept")["salary"].transform("mean")`,
+    sql: `-- GROUP BY shrinks (like agg)
+SELECT dept, AVG(salary) FROM employees GROUP BY dept;
+
+-- PARTITION BY keeps all rows (like transform!)
+SELECT name, dept, salary,
+       AVG(salary) OVER (PARTITION BY dept) AS dept_avg
+FROM employees;`,
+    tip: "<b>transform()</b> in Pandas is the exact twin of <b>OVER (PARTITION BY ...)</b> in MySQL!",
+    outCols: ["name", "dept", "salary", "dept_avg (transform)"],
+    outRows: [["Amit","Tech",80,85],["Sara","Tech",95,85],["Raj","Sales",60,60],["Neha","Sales",null,60],["Dev","Tech",80,85]],
+    hl: [0,1,2,3,4]
+  },
+  {
+    name: "Named Aggregation & Multi-Col + reset_index()",
+    desc: "Give clean column names during groupby and flatten the index back into normal columns.",
+    pd: `df.groupby(["dept", "city"]).agg(
+    avg_sal=("salary", "mean"),
+    emp_cnt=("id", "count")
+).reset_index()`,
+    sql: `SELECT dept, city,
+       AVG(salary) AS avg_sal,
+       COUNT(id)   AS emp_cnt
+FROM employees
+GROUP BY dept, city;`,
+    tip: "Always call <b>.reset_index()</b> after multi-column <code>groupby</code> if you want a clean flat table again!",
+    outCols: ["dept", "city", "avg_sal", "emp_cnt"],
+    outRows: [["Tech","Mumbai",80,1],["Tech","Delhi",87.5,2],["Sales","Mumbai",60,1],["Sales","Pune",null,1]],
+    hl: [0,1]
+  },
+  {
+    name: "filter(), value_counts(), get_group(), lambda",
+    desc: "Keep whole groups that meet a condition, count frequencies, grab 1 group, or use custom lambdas.",
+    pd: `# Keep only depts with >= 3 people
+df.groupby("dept").filter(lambda g: len(g) >= 3)
+
+# Frequency count
+df["city"].value_counts()
+
+# Grab just the 'Tech' group
+df.groupby("dept").get_group("Tech")
+
+# Lambda inside agg (salary range: max - min)
+df.groupby("dept")["salary"].agg(lambda s: s.max() - s.min())`,
+    sql: `-- Keep groups with >= 3 people (HAVING!)
+SELECT dept, COUNT(*) FROM employees
+GROUP BY dept
+HAVING COUNT(*) >= 3;`,
+    tip: "Pandas <code>groupby().filter()</code> is like SQL <b>HAVING</b>, except Pandas returns the actual rows!",
+    outCols: empCols,
+    outRows: [empRows[0], empRows[1], empRows[4]],
+    hl: [0,1,2]
+  },
+  {
+    name: "RANK, DENSE_RANK, ROW_NUMBER & rank()",
+    desc: "See how ties (Amit=80, Dev=80) are numbered differently across the 3 ranking methods!",
+    pd: `# Tie methods in Pandas:
+df["r_min"]   = df["salary"].rank(method="min", ascending=False)   # RANK
+df["r_dense"] = df["salary"].rank(method="dense", ascending=False) # DENSE_RANK
+df["r_first"] = df["salary"].rank(method="first", ascending=False) # ROW_NUMBER`,
+    sql: `SELECT name, salary,
+  RANK()       OVER (ORDER BY salary DESC) AS r_rank,
+  DENSE_RANK() OVER (ORDER BY salary DESC) AS r_dense,
+  ROW_NUMBER() OVER (ORDER BY salary DESC) AS r_rownum
+FROM employees;`,
+    tip: "Ties at 80 (after 95): <b>RANK</b> = 1, 2, 2, 4 (skips 3). <b>DENSE_RANK</b> = 1, 2, 2, 3 (no skip). <b>ROW_NUMBER</b> = 1, 2, 3, 4.",
+    outCols: ["name", "salary", "RANK (min)", "DENSE_RANK", "ROW_NUMBER"],
+    outRows: [["Sara",95,1,1,1],["Amit",80,2,2,2],["Dev",80,2,2,3],["Raj",60,4,3,4]],
+    hl: [1,2]
+  },
+  {
+    name: "CTEs (WITH ... AS) — Top N per Group",
+    desc: "Break complex SQL into clean named steps! The #1 interview pattern for 'Find the 2nd highest salary in each department'.",
+    pd: `# Rank inside each dept, then filter rank == 2
+df["r"] = df.groupby("dept")["salary"].rank(method="dense", ascending=False)
+df[df["r"] == 2]`,
+    sql: `WITH ranked AS (
+  SELECT name, dept, salary,
+         DENSE_RANK() OVER (
+           PARTITION BY dept ORDER BY salary DESC
+         ) AS r
+  FROM employees
+)
+SELECT name, dept, salary
+FROM ranked
+WHERE r = 2;`,
+    tip: "You CANNOT filter a window function inside <code>WHERE</code> directly—always wrap it in a <b>CTE (WITH ranked AS (...))</b> first!",
+    outCols: ["name", "dept", "salary", "rank_in_dept"],
+    outRows: [["Amit","Tech",80,2],["Dev","Tech",80,2]],
+    hl: [0,1]
+  },
+  {
+    name: "LAG() / LEAD() & .shift()",
+    desc: "Look at the previous row (LAG / shift(1)) or next row (LEAD / shift(-1)) — essential for day-over-day or month-over-month growth!",
+    pd: `# Previous day's sales & daily change
+df["prev_sales"] = df["sales"].shift(1)
+df["diff"]       = df["sales"] - df["prev_sales"]
+
+# Next day's sales
+df["next_sales"] = df["sales"].shift(-1)`,
+    sql: `SELECT day, sales,
+  LAG(sales, 1)  OVER (ORDER BY day) AS prev_sales,
+  sales - LAG(sales, 1) OVER (ORDER BY day) AS diff,
+  LEAD(sales, 1) OVER (ORDER BY day) AS next_sales
+FROM daily_sales;`,
+    tip: "<b>LAG(col, 1)</b> = <code>.shift(1)</code> (previous row). <b>LEAD(col, 1)</b> = <code>.shift(-1)</code> (next row).",
+    outCols: ["day", "sales", "prev_sales (LAG)", "diff"],
+    outRows: [["Mon",100,null,null],["Tue",125,100,"+25"],["Wed",115,125,"-10"],["Thu",150,115,"+35"]],
+    hl: [1,3], warn: [2]
+  },
+  {
+    name: "pivot_table() (Rows → Columns)",
+    desc: "Turn long tables into Excel-style summary grids (e.g., Departments as rows, Cities as columns, Avg Salary inside).",
+    pd: `pd.pivot_table(
+    df,
+    index="dept",
+    columns="city",
+    values="salary",
+    aggfunc="mean",
+    fill_value=0
+)`,
+    sql: `-- Conditional aggregation (SQL's pivot trick!)
+SELECT dept,
+  AVG(CASE WHEN city='Mumbai' THEN salary END) AS Mumbai,
+  AVG(CASE WHEN city='Delhi'  THEN salary END) AS Delhi
+FROM employees
+GROUP BY dept;`,
+    tip: "In MySQL (which has no PIVOT keyword), use <b>AVG/SUM(CASE WHEN ...)</b> inside <code>GROUP BY</code>!",
+    outCols: ["dept", "Delhi", "Mumbai", "Pune"],
+    outRows: [["Sales", 0, 60, 0], ["Tech", 87.5, 80, 0]],
+    hl: [0,1]
+  }
+];
+
+// ==================== TAB 3 DATA ====================
+const t3Data = [
+  {
+    name: "⚡ Live Join Playground",
+    isPlayground: true
+  },
+  {
+    name: "merge: inner, left, right, outer",
+    desc: "Combine two tables on a matching key (like SQL JOINs).",
+    pd: `# inner = only matches | left = keep all left rows
+pd.merge(emp, dept_df, on="dept", how="left")`,
+    sql: `SELECT e.*, d.manager
+FROM employees e
+LEFT JOIN departments d
+  ON e.dept = d.dept;`,
+    tip: "<b>inner</b> = intersection only. <b>left</b> = keep every row from left table (fills NaN/NULL if no match).",
+    outCols: ["name", "dept", "manager"],
+    outRows: [["Amit","Tech","Priya"],["Sara","Tech","Priya"],["Raj","Sales","Karan"],["Neha","Sales","Karan"]],
+    hl: [0,1,2,3]
+  },
+  {
+    name: "left_on / right_on, suffixes, indicator=True",
+    desc: "When key column names differ, overlapping columns collide, or you want to debug which table each row came from.",
+    pd: `pd.merge(
+    emp, bonus,
+    left_on="id", right_on="emp_id",
+    how="outer",
+    suffixes=("_emp", "_bonus"),
+    indicator=True   # adds '_merge' column!
+)`,
+    sql: `SELECT e.name, b.amount
+FROM employees e
+LEFT JOIN bonuses b
+  ON e.id = b.emp_id;`,
+    tip: "<b>indicator=True</b> adds a <code>_merge</code> column (<code>left_only</code>, <code>right_only</code>, <code>both</code>) — lifesaver for debugging joins!",
+    outCols: ["id", "name", "amount", "_merge"],
+    outRows: [[1,"Amit",500,"both"],[2,"Sara",null,"left_only"],[9,"Ghost",200,"right_only"]],
+    hl: [0], warn: [1,2]
+  },
+  {
+    name: "Duplicate Keys & Row Explosion!",
+    desc: "If a key appears 2 times in Left AND 3 times in Right, merge creates 2 × 3 = 6 rows! Always check df.shape after merge.",
+    pd: `# Danger: id=1 appears twice in left & twice in right -> 2x2 = 4 rows!
+res = pd.merge(left_df, right_df, on="id", how="inner")
+
+# Protect yourself with validate:
+pd.merge(left_df, right_df, on="id", validate="one_to_many")`,
+    sql: `-- Same trap in SQL! Always check row count before & after JOIN
+SELECT COUNT(*) FROM left_t JOIN right_t ON left_t.id = right_t.id;`,
+    tip: "Pro trick: pass <b>validate='one_to_many'</b> in <code>pd.merge()</code> so Pandas throws an error instead of silently exploding rows!",
+    outCols: ["id", "left_val", "right_val"],
+    outRows: [[1,"A","X"],[1,"A","Y"],[1,"B","X"],[1,"B","Y"]],
+    warn: [0,1,2,3]
+  },
+  {
+    name: ".join() vs concat()",
+    desc: ".join() merges on the INDEX by default. pd.concat() stacks tables vertically (axis=0) or side-by-side (axis=1).",
+    pd: `# .join() uses the index automatically
+df1.join(df2, how="left")
+
+# Stack two tables on top of each other (axis=0)
+pd.concat([jan_sales, feb_sales], ignore_index=True)
+
+# Glue side-by-side (axis=1)
+pd.concat([df_left, df_right], axis=1)`,
+    sql: `-- Stack vertically (like concat axis=0)
+SELECT * FROM jan_sales
+UNION ALL
+SELECT * FROM feb_sales;`,
+    tip: "Use <b>pd.merge()</b> for column joins, <b>pd.concat()</b> for stacking tables (like SQL <b>UNION ALL</b>)!",
+    outCols: ["month", "sales"],
+    outRows: [["Jan", 100], ["Jan", 120], ["Feb", 150], ["Feb", 130]],
+    hl: [2,3]
+  },
+  {
+    name: "SELF JOIN (Employee → Manager)",
+    desc: "Join a table to ITSELF using aliases (e and m) — classic interview question to match each employee with their manager's name!",
+    pd: `# Merge employees with itself on manager_id == id
+pd.merge(
+    emp, emp[["id", "name"]],
+    left_on="manager_id", right_on="id",
+    how="left", suffixes=("", "_mgr")
+)`,
+    sql: `SELECT e.name AS employee,
+       m.name AS manager
+FROM employees e
+LEFT JOIN employees m
+  ON e.manager_id = m.id;`,
+    tip: "Always use <b>LEFT JOIN</b> for a Self Join so the CEO (who has <code>manager_id = NULL</code>) doesn't disappear!",
+    outCols: ["employee", "manager"],
+    outRows: [["Sara", null], ["Amit", "Sara"], ["Dev", "Sara"], ["Raj", "Amit"]],
+    hl: [1,2,3], warn: [0]
+  },
+  {
+    name: "LEFT ANTI JOIN (Find Unmatched Rows)",
+    desc: "Find rows in Table A that do NOT exist in Table B (e.g., customers who NEVER placed an order).",
+    pd: `# Use indicator=True, then keep only 'left_only'!
+m = pd.merge(emp, bonus, on="id", how="left", indicator=True)
+no_bonus = m[m["_merge"] == "left_only"]`,
+    sql: `-- LEFT JOIN + WHERE right.id IS NULL
+SELECT e.name
+FROM employees e
+LEFT JOIN bonuses b ON e.id = b.emp_id
+WHERE b.emp_id IS NULL;`,
+    tip: "Top SQL interview trick! <b>LEFT JOIN ... WHERE right_table.key IS NULL</b> = Anti Join (unmatched rows).",
+    outCols: ["id", "name", "bonus_status"],
+    outRows: [[2, "Sara", "No Bonus (NULL)"], [4, "Neha", "No Bonus (NULL)"]],
+    warn: [0,1]
+  },
+  {
+    name: "CROSS JOIN (Every Combination)",
+    desc: "Pairs EVERY row from Table A with EVERY row from Table B (3 sizes × 2 colors = 6 combinations).",
+    pd: `# Pandas 1.2+ supports how='cross'
+pd.merge(sizes, colors, how="cross")`,
+    sql: `SELECT s.size, c.color
+FROM sizes s
+CROSS JOIN colors c;`,
+    tip: "No <code>ON</code> clause needed! Be careful: 1,000 × 1,000 rows = <b>1,000,000 rows</b>.",
+    outCols: ["size", "color"],
+    outRows: [["S","Red"],["S","Blue"],["M","Red"],["M","Blue"],["L","Red"],["L","Blue"]],
+    hl: [0,1,2,3,4,5]
+  }
+];
+
+function setupTab(listId, viewId, data) {
+  const list = document.getElementById(listId);
+  const view = document.getElementById(viewId);
+  data.forEach((item, idx) => {
+    const b = document.createElement('button');
+    b.className = 'topic-btn' + (idx === 0 ? ' active' : '');
+    b.textContent = item.name;
+    b.onclick = () => {
+      list.querySelectorAll('.topic-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      renderTopic(view, item);
+    };
+    list.appendChild(b);
+  });
+  renderTopic(view, data[0]);
+}
+
+function renderTopic(view, item) {
+  if (item.isPlayground) { renderJoinPlayground(view); return; }
+  if (item.playground === "filter") { renderFilterPlayground(view); return; }
+  if (item.playground === "group") { renderGroupPlayground(view); return; }
+  view.innerHTML = `
+    <h2>${item.name}</h2>
+    <p class="desc">${item.desc}</p>
+    <div class="code-grid">
+      <div class="code-panel">
+        <div class="code-title pd"><span>PANDAS (Python)</span></div>
+        <div class="code-box">${item.pd.replace(/</g,'&lt;')}</div>
+      </div>
+      <div class="code-panel">
+        <div class="code-title sql"><span>MYSQL (SQL)</span></div>
+        <div class="code-box">${item.sql.replace(/</g,'&lt;')}</div>
+      </div>
+    </div>
+    <div class="tip-box"><b>Syntax Memory Tip:</b> ${item.tip}</div>
+    <div class="tables-grid">
+      <div>
+        <h3>Sample Input (employees)</h3>
+        ${renderTable(empCols, empRows)}
+      </div>
+      <div>
+        <h3>Output Result</h3>
+        ${renderTable(item.outCols, item.outRows, item.hl || [], item.warn || [])}
+      </div>
+    </div>
+  `;
+}
+
+function renderFilterPlayground(view) {
+  let dept = "ALL", city = "ALL", minSal = 0, hideNull = false;
+
+  function update() {
+    const out = [], hl = [];
+    empRows.forEach(r => {
+      if (dept !== "ALL" && r[2] !== dept) return;
+      if (city !== "ALL" && r[4] !== city) return;
+      if (hideNull && r[3] === null) return;
+      if (minSal > 0 && (r[3] === null || r[3] < minSal)) return;
+      hl.push(out.length);
+      out.push(r);
+    });
+
+    const pdConds = [], sqlConds = [];
+    if (dept !== "ALL") { pdConds.push(`(df["dept"] == "${dept}")`); sqlConds.push(`dept = '${dept}'`); }
+    if (city !== "ALL") { pdConds.push(`(df["city"] == "${city}")`); sqlConds.push(`city = '${city}'`); }
+    if (minSal > 0)     { pdConds.push(`(df["salary"] >= ${minSal})`); sqlConds.push(`salary >= ${minSal}`); }
+    if (hideNull)       { pdConds.push(`df["salary"].notna()`); sqlConds.push(`salary IS NOT NULL`); }
+
+    const pdCode = pdConds.length ? `mask = ${pdConds.join(" &\n       ")}\ndf[mask]` : `df  # No filter applied`;
+    const sqlCode = sqlConds.length ? `SELECT * FROM employees\nWHERE ${sqlConds.join("\n  AND ")};` : `SELECT * FROM employees;`;
+
+    const selStyle = "background:#090c10;color:var(--gold);border:1px solid var(--border);padding:6px 10px;border-radius:6px;font-family:monospace;";
+    view.innerHTML = `
+      <h2>⚡ Live Filter Playground</h2>
+      <p class="desc">Toggle any filter below and watch the <b>Output Table</b> + exact <b>Pandas &amp; MySQL</b> syntax build itself live!</p>
+      <div class="btn-row" style="align-items:center;">
+        <label style="font-size:0.84rem;color:var(--muted);">Dept:
+          <select id="fp-dept" style="${selStyle}">${["ALL","Tech","Sales"].map(v=>`<option ${v===dept?'selected':''}>${v}</option>`).join('')}</select>
+        </label>
+        <label style="font-size:0.84rem;color:var(--muted);">City:
+          <select id="fp-city" style="${selStyle}">${["ALL","Mumbai","Delhi","Pune"].map(v=>`<option ${v===city?'selected':''}>${v}</option>`).join('')}</select>
+        </label>
+        <label style="font-size:0.84rem;color:var(--muted);">Min Salary:
+          <select id="fp-sal" style="${selStyle}">${[0,60,80,90].map(v=>`<option value="${v}" ${v===minSal?'selected':''}>${v===0?'Any':'>= '+v}</option>`).join('')}</select>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.84rem;color:var(--gold);cursor:pointer;">
+          <input type="checkbox" id="fp-null" ${hideNull?'checked':''} /> Hide NULL Salary
+        </label>
+      </div>
+      <div class="code-grid">
+        <div class="code-panel"><div class="code-title pd"><span>PANDAS (Python)</span></div><div class="code-box">${pdCode}</div></div>
+        <div class="code-panel"><div class="code-title sql"><span>MYSQL (SQL)</span></div><div class="code-box">${sqlCode}</div></div>
+      </div>
+      <div class="tables-grid">
+        <div><h3>Original Table (5 rows)</h3>${renderTable(empCols, empRows)}</div>
+        <div><h3>Live Filtered Output (${out.length} rows)</h3>${out.length ? renderTable(empCols, out, hl) : '<div class="tip-box">No rows match this filter!</div>'}</div>
+      </div>
+    `;
+    view.querySelector('#fp-dept').onchange = e => { dept = e.target.value; update(); };
+    view.querySelector('#fp-city').onchange = e => { city = e.target.value; update(); };
+    view.querySelector('#fp-sal').onchange = e => { minSal = +e.target.value; update(); };
+    view.querySelector('#fp-null').onchange = e => { hideNull = e.target.checked; update(); };
+  }
+  update();
+}
+
+function renderGroupPlayground(view) {
+  let mode = "agg";
+
+  function update() {
+    let outCols = [], outRows = [], hl = [], pdCode = "", sqlCode = "", tip = "";
+    if (mode === "agg") {
+      outCols = ["dept", "avg_salary", "count(salary)", "size()"];
+      outRows = [["Tech", 85.0, 3, 3], ["Sales", 60.0, 1, 2]];
+      hl = [0, 1];
+      pdCode = `df.groupby("dept").agg(\n    avg_sal=("salary", "mean"),\n    non_null=("salary", "count"),\n    total_rows=("id", "size")\n).reset_index()`;
+      sqlCode = `SELECT dept,\n       AVG(salary)   AS avg_sal,\n       COUNT(salary) AS non_null,\n       COUNT(*)      AS total_rows\nFROM employees\nGROUP BY dept;`;
+      tip = "<b>agg() / GROUP BY</b> SHRINKS 5 rows down to <b>2 rows</b> (1 per department). Notice Sales has count=1 but size=2 (Neha is NULL)!";
+    } else if (mode === "transform") {
+      outCols = ["name", "dept", "salary", "dept_avg"];
+      outRows = [["Amit","Tech",80,85],["Sara","Tech",95,85],["Raj","Sales",60,60],["Neha","Sales",null,60],["Dev","Tech",80,85]];
+      hl = [0,1,2,3,4];
+      pdCode = `df["dept_avg"] = (\n    df.groupby("dept")["salary"]\n      .transform("mean")\n)`;
+      sqlCode = `SELECT name, dept, salary,\n       AVG(salary) OVER (PARTITION BY dept) AS dept_avg\nFROM employees;`;
+      tip = "<b>transform() / PARTITION BY</b> KEEPS all <b>5 rows</b> and broadcasts each department's average onto every row!";
+    } else {
+      outCols = ["name", "salary", "RANK", "DENSE_RANK", "ROW_NUMBER"];
+      outRows = [["Sara",95,1,1,1],["Amit",80,2,2,2],["Dev",80,2,2,3],["Raj",60,4,3,4]];
+      hl = [1, 2];
+      pdCode = `df["rank"]  = df["salary"].rank(method="min", ascending=False)\ndf["dense"] = df["salary"].rank(method="dense", ascending=False)\ndf["rownum"]= df["salary"].rank(method="first", ascending=False)`;
+      sqlCode = `SELECT name, salary,\n  RANK()       OVER (ORDER BY salary DESC) AS r_rank,\n  DENSE_RANK() OVER (ORDER BY salary DESC) AS r_dense,\n  ROW_NUMBER() OVER (ORDER BY salary DESC) AS r_num\nFROM employees;`;
+      tip = "Look at the tie (Amit=80, Dev=80): <b>RANK</b> skips 3 (1,2,2,4), <b>DENSE_RANK</b> has no gap (1,2,2,3), <b>ROW_NUMBER</b> never ties (1,2,3,4)!";
+    }
+
+    view.innerHTML = `
+      <h2>⚡ Live GroupBy &amp; Window Playground</h2>
+      <p class="desc">Switch modes below to see the difference between shrinking rows (<b>agg</b>), keeping rows (<b>transform / PARTITION BY</b>), and <b>Ranking</b>!</p>
+      <div class="btn-row" id="gp-btns">
+        <button class="btn ${mode==='agg'?'':'secondary'}" data-m="agg">agg() / GROUP BY (Shrinks)</button>
+        <button class="btn ${mode==='transform'?'':'secondary'}" data-m="transform">transform() / PARTITION BY (Keeps Rows)</button>
+        <button class="btn ${mode==='rank'?'':'secondary'}" data-m="rank">RANK vs DENSE_RANK vs ROW_NUMBER</button>
+      </div>
+      <div class="code-grid">
+        <div class="code-panel"><div class="code-title pd"><span>PANDAS (Python)</span></div><div class="code-box">${pdCode}</div></div>
+        <div class="code-panel"><div class="code-title sql"><span>MYSQL (SQL)</span></div><div class="code-box">${sqlCode}</div></div>
+      </div>
+      <div class="tip-box">${tip}</div>
+      <div class="tables-grid">
+        <div><h3>Input Table (5 rows)</h3>${renderTable(empCols, empRows)}</div>
+        <div><h3>Live Output (${outRows.length} rows)</h3>${renderTable(outCols, outRows, hl)}</div>
+      </div>
+    `;
+    view.querySelectorAll('#gp-btns button').forEach(b => { b.onclick = () => { mode = b.dataset.m; update(); }; });
+  }
+  update();
+}
+
+function renderJoinPlayground(view) {
+  let joinType = 'inner';
+  let dupKey = false;
+
+  const leftBase = [
+    { id: 1, name: "Amit", mgr: 2 },
+    { id: 2, name: "Sara", mgr: null },
+    { id: 3, name: "Raj",  mgr: 1 }
+  ];
+  const rightBase = [
+    { id: 1, bonus: 500 },
+    { id: 3, bonus: 300 },
+    { id: 4, bonus: 200 }
+  ];
+
+  function update() {
+    const L = leftBase;
+    const R = dupKey ? [...rightBase, { id: 1, bonus: 999 }] : rightBase;
+    let outCols = ["id", "name", "bonus"];
+    let outRows = [], hl = [], warn = [];
+    let pdCode = "", sqlCode = "";
+
+    if (joinType === 'self') {
+      outCols = ["employee", "manager"];
+      L.forEach((e, i) => {
+        const m = L.find(x => x.id === e.mgr);
+        outRows.push([e.name, m ? m.name : null]);
+        if (!m) warn.push(i); else hl.push(i);
+      });
+      pdCode = `pd.merge(emp, emp[['id','name']],\n  left_on='mgr', right_on='id',\n  how='left', suffixes=('','_mgr'))`;
+      sqlCode = `SELECT e.name AS employee, m.name AS manager\nFROM employees e\nLEFT JOIN employees m ON e.mgr = m.id;`;
+    } else if (joinType === 'anti') {
+      L.forEach(l => {
+        const matches = R.filter(r => r.id === l.id);
+        if (matches.length === 0) {
+          warn.push(outRows.length);
+          outRows.push([l.id, l.name, null]);
+        }
+      });
+      pdCode = `m = pd.merge(emp, bonus, on='id', how='left', indicator=True)\nm[m['_merge'] == 'left_only']`;
+      sqlCode = `SELECT e.id, e.name\nFROM employees e\nLEFT JOIN bonuses b ON e.id = b.id\nWHERE b.id IS NULL;`;
+    } else {
+      const matchedR = new Set();
+      L.forEach(l => {
+        const matches = R.filter(r => r.id === l.id);
+        if (matches.length > 0) {
+          matches.forEach(r => {
+            matchedR.add(r);
+            hl.push(outRows.length);
+            outRows.push([l.id, l.name, r.bonus]);
+          });
+        } else if (joinType === 'left' || joinType === 'outer') {
+          warn.push(outRows.length);
+          outRows.push([l.id, l.name, null]);
+        }
+      });
+      if (joinType === 'right' || joinType === 'outer') {
+        R.forEach(r => {
+          if (!matchedR.has(r)) {
+            warn.push(outRows.length);
+            outRows.push([r.id, null, r.bonus]);
+          }
+        });
+      }
+      const sqlMap = { inner: 'INNER JOIN', left: 'LEFT JOIN', right: 'RIGHT JOIN', outer: 'FULL OUTER JOIN' };
+      pdCode = `pd.merge(emp, bonus, on='id', how='${joinType}')`;
+      sqlCode = `SELECT e.id, e.name, b.bonus\nFROM employees e\n${sqlMap[joinType]} bonuses b ON e.id = b.id;`;
+    }
+
+    view.innerHTML = `
+      <h2>⚡ Live Join Playground</h2>
+      <p class="desc">Click any join type below (and toggle <b>Duplicate Key</b>) to watch the Output Table and Pandas/MySQL code update live!</p>
+      <div class="btn-row" id="jp-btns">
+        ${['inner','left','right','outer','anti','self'].map(t =>
+          `<button class="btn ${joinType===t ? '' : 'secondary'}" data-j="${t}">${t.toUpperCase()} JOIN</button>`
+        ).join('')}
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.86rem;color:var(--gold);margin-left:6px;cursor:pointer;">
+          <input type="checkbox" id="jp-dup" ${dupKey ? 'checked' : ''} /> Duplicate Key (id=1 twice!)
+        </label>
+      </div>
+      <div class="code-grid">
+        <div class="code-panel">
+          <div class="code-title pd"><span>PANDAS (Python)</span></div>
+          <div class="code-box">${pdCode}</div>
+        </div>
+        <div class="code-panel">
+          <div class="code-title sql"><span>MYSQL (SQL)</span></div>
+          <div class="code-box">${sqlCode}</div>
+        </div>
+      </div>
+      <div class="tables-grid">
+        <div>
+          <h3>Left Table: employees</h3>
+          ${renderTable(["id","name","mgr"], L.map(x=>[x.id,x.name,x.mgr]))}
+          <h3 style="margin-top:10px;">Right Table: bonuses</h3>
+          ${renderTable(["id","bonus"], R.map(x=>[x.id,x.bonus]), [], dupKey ? [0,3] : [])}
+        </div>
+        <div>
+          <h3>Live Joined Output (${outRows.length} rows)</h3>
+          ${renderTable(outCols, outRows, hl, warn)}
+        </div>
+      </div>
+    `;
+
+    view.querySelectorAll('#jp-btns button').forEach(b => {
+      b.onclick = () => { joinType = b.dataset.j; update(); };
+    });
+    view.querySelector('#jp-dup').onchange = (e) => { dupKey = e.target.checked; update(); };
+  }
+  update();
+}
+
+setupTab('list-t1', 'view-t1', t1Data);
+setupTab('list-t2', 'view-t2', t2Data);
+setupTab('list-t3', 'view-t3', t3Data);
+
+// --- Nav ---
+document.querySelectorAll('#nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ==================== TAB 4: SYNTAX RECALL DRILL ====================
+const drills = [
+  { lang: "Pandas", prompt: "Count missing values in every column of df:", ans: ["df.isna().sum()", "df.isnull().sum()"], hint: "df.is__().sum()" },
+  { lang: "MySQL", prompt: "Filter employees where salary is missing (NULL):", ans: ["select * from employees where salary is null", "where salary is null", "is null"], hint: "Never use = NULL! Use: WHERE salary IS ____" },
+  { lang: "Pandas", prompt: "Which indexer uses LABELS (loc or iloc)?", ans: ["loc", "df.loc"], hint: "l__ = label" },
+  { lang: "Pandas", prompt: "Which operator means NOT in a Pandas boolean mask?", ans: ["~"], hint: "Tilde symbol (~)" },
+  { lang: "Pandas", prompt: "Filter df where city is in ['Mumbai', 'Delhi']:", ans: ["df[df['city'].isin(['mumbai','delhi'])]", "df['city'].isin(['mumbai','delhi'])", ".isin("], hint: "Use .isin([...])" },
+  { lang: "Pandas", prompt: "Safely update salary to 90 where dept == 'Tech' using loc:", ans: ["df.loc[df['dept']=='tech','salary']=90", "df.loc["], hint: "df.loc[condition, 'salary'] = 90" },
+  { lang: "MySQL", prompt: "Which SQL clause creates conditional buckets (like np.where)?", ans: ["case when", "case"], hint: "C___ W___ ... THEN ... ELSE ... END" },
+  { lang: "Pandas", prompt: "Which axis drops a COLUMN in df.drop('city', axis=?):", ans: ["axis=1", "1"], hint: "0 = rows, 1 = columns" },
+  { lang: "Pandas", prompt: "Which groupby method counts ALL rows including NaN?", ans: ["size()", "size", ".size()"], hint: "count() skips NaN; the other one is s___()" },
+  { lang: "Pandas", prompt: "Add a column 'dept_avg' keeping all original rows using groupby:", ans: ["df.groupby('dept')['salary'].transform('mean')", "transform('mean')", "transform"], hint: "Use .trans____('mean')" },
+  { lang: "Pandas", prompt: "Flatten a multi-index back into normal columns after groupby:", ans: ["reset_index()", ".reset_index()", "reset_index"], hint: ".res___in___()" },
+  { lang: "MySQL", prompt: "Which window function ranks ties as 1, 2, 2, 3 (no gap)?", ans: ["dense_rank()", "dense_rank"], hint: "DENSE_____()" },
+  { lang: "MySQL", prompt: "Which window function gives 1, 2, 3, 4 even on ties?", ans: ["row_number()", "row_number"], hint: "ROW_______()" },
+  { lang: "MySQL", prompt: "Which clause inside OVER(...) groups rows without shrinking them?", ans: ["partition by", "over (partition by"], hint: "PART_____ BY" },
+  { lang: "Pandas", prompt: "Which parameter in pd.merge() adds a '_merge' debug column?", ans: ["indicator=true", "indicator"], hint: "ind______=True" },
+  { lang: "Pandas", prompt: "Which parameter in pd.merge() stops silent duplicate-key row explosion?", ans: ["validate", "validate='one_to_many'", "validate='one_to_one'"], hint: "val_____='one_to_many'" },
+  { lang: "MySQL", prompt: "Join a table to itself (e.g., employee to manager) — what is this called?", ans: ["self join", "left join"], hint: "S___ JOIN" },
+  { lang: "MySQL", prompt: "In a Left Anti Join (find unmatched rows), what goes in the WHERE clause?", ans: ["is null", "where b.emp_id is null"], hint: "WHERE right_table.id IS ____" },
+  { lang: "Pandas", prompt: "Stack two DataFrames vertically (like SQL UNION ALL):", ans: ["pd.concat", "concat", "pd.concat([df1,df2])"], hint: "pd.con___([df1, df2])" },
+  { lang: "MySQL", prompt: "Get unique values of city from employees:", ans: ["select distinct city from employees", "distinct"], hint: "SELECT DIS_____ city FROM employees" },
+  { lang: "MySQL", prompt: "Replace NULL salary with 0 in a SELECT query:", ans: ["coalesce(salary,0)", "coalesce"], hint: "COAL____(salary, 0)" },
+  { lang: "MySQL", prompt: "Start a CTE named 'ranked' before a SELECT:", ans: ["with ranked as (", "with ranked as", "with"], hint: "W___ ranked AS (...)" },
+  { lang: "MySQL", prompt: "Which window function gets the PREVIOUS row's value?", ans: ["lag()", "lag"], hint: "L__() OVER (...)" },
+  { lang: "Pandas", prompt: "Get the previous row's value in a Series (twin of SQL LAG):", ans: [".shift(1)", "shift(1)", "shift"], hint: "df['sales'].sh___(1)" },
+  { lang: "Pandas", prompt: "Remove non-digit characters from df['price'] using regex replace:", ans: [".str.replace", "str.replace", "regex=true"], hint: "df['price'].str.rep____(r'[^0-9]', '', regex=True)" }
+];
+
+let dIdx = 0, dOk = 0, dTot = 0, missedSet = new Set(), retryOnly = false;
+
+function getActiveList() {
+  return retryOnly && missedSet.size > 0 ? Array.from(missedSet) : drills.map((_, i) => i);
+}
+
+function loadDrill() {
+  const pool = getActiveList();
+  if (!pool.includes(dIdx)) dIdx = pool[0];
+  const d = drills[dIdx];
+  document.getElementById('d-lang').textContent = d.lang;
+  document.getElementById('d-prompt').textContent = d.prompt;
+  document.getElementById('d-progress').textContent = `${pool.indexOf(dIdx) + 1} / ${pool.length}`;
+  document.getElementById('d-missed-cnt').textContent = missedSet.size;
+  document.getElementById('d-input').value = '';
+  const fb = document.getElementById('d-fb');
+  fb.className = 'feedback'; fb.textContent = '';
+}
+document.getElementById('d-check').onclick = () => {
+  const d = drills[dIdx];
+  const u = document.getElementById('d-input').value.trim().toLowerCase().replace(/"/g, "'").replace(/;$/, '').replace(/\s+/g, ' ');
+  if (!u) return;
+  dTot++;
+  const fb = document.getElementById('d-fb');
+  const normU = u.replace(/\s/g, '');
+  const matched = d.ans.some(a => normU.includes(a.replace(/\s/g, '')));
+  if (matched) {
+    dOk++;
+    missedSet.delete(dIdx);
+    fb.className = 'feedback ok';
+    fb.textContent = 'Correct! Exact syntax: ' + d.ans[0];
+  } else {
+    missedSet.add(dIdx);
+    fb.className = 'feedback err';
+    fb.textContent = 'Not quite! Added to Missed Pool. Expected syntax:\n' + d.ans[0];
+  }
+  document.getElementById('d-score').textContent = `${dOk} / ${dTot}`;
+  document.getElementById('d-missed-cnt').textContent = missedSet.size;
+};
+document.getElementById('d-hint').onclick = () => {
+  const fb = document.getElementById('d-fb');
+  fb.className = 'feedback hint';
+  fb.textContent = 'Hint: ' + drills[dIdx].hint;
+};
+document.getElementById('d-next').onclick = () => {
+  const pool = getActiveList();
+  const pos = pool.indexOf(dIdx);
+  dIdx = pool[(pos + 1) % pool.length];
+  loadDrill();
+};
+document.getElementById('d-retry-mode').onclick = (e) => {
+  retryOnly = !retryOnly;
+  e.target.textContent = `Retry Missed Only: ${retryOnly ? 'ON' : 'OFF'}`;
+  loadDrill();
+};
+loadDrill();
+</script>
+</body>
+</html>

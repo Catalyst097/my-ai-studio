@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DSA Studio — Interactive Algorithm Debugger &amp; Pattern Trainer</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #131822;
+    --panel2: #0f131b;
+    --border: #262e3d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --blue: #58c4dd;
+    --gold: #f0ac5f;
+    --green: #83c167;
+    --red: #fc6255;
+    --purple: #b392f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 16px 26px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #080a0f;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.2px; }
+  header h1 span { color: var(--blue); }
+  header .sub { font-size: 0.84rem; color: var(--muted); }
+  .suite-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .suite-nav a {
+    text-decoration: none; font-size: 0.82rem; font-weight: 600;
+    padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+  }
+  .suite-nav a:hover { color: var(--text); border-color: var(--blue); }
+  .suite-nav a.cur { background: rgba(88,196,221,0.16); color: var(--blue); border-color: var(--blue); }
+
+  nav {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid transparent;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  nav button:hover { color: var(--text); background: #1e2636; }
+  nav button.active { color: #080a0f; background: var(--blue); font-weight: 700; }
+
+  main {
+    flex: 1;
+    padding: 20px 24px 36px;
+    max-width: 1360px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* Story Banner */
+  .story-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .story-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card h2 { font-size: 1.05rem; color: var(--blue); display: flex; align-items: center; gap: 8px; }
+  .card h3 { font-size: 0.88rem; color: var(--gold); }
+  .muted { font-size: 0.87rem; color: var(--muted); line-height: 1.5; }
+
+  .analogy-box {
+    background: rgba(88,196,221,0.08);
+    border-left: 3px solid var(--blue);
+    padding: 11px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+  .analogy-box b { color: var(--blue); }
+
+  .vs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .vs-pill {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .vs-pill.slow { border-color: rgba(252,98,85,0.45); }
+  .vs-pill.fast { border-color: rgba(131,193,103,0.45); }
+  .vs-pill .tag { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .vs-pill.slow .tag { color: var(--red); }
+  .vs-pill.fast .tag { color: var(--green); }
+
+  /* Main Workspace Grid */
+  .work-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 960px) { .work-grid { grid-template-columns: 1fr; } }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .custom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+  .custom-controls select, .custom-controls input[type="number"] {
+    background: #080a0f;
+    color: var(--gold);
+    border: 1px solid var(--border);
+    padding: 5px 9px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+  }
+
+  /* Stage */
+  .stage {
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 14px;
+    min-height: 270px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    position: relative;
+  }
+  .arr-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .cell-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+  }
+  .cell {
+    width: 54px;
+    height: 54px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: #141a24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    transition: all 0.22s ease;
+  }
+  .cell.dim { opacity: 0.22; transform: scale(0.92); }
+  .cell.ptr-l { border-color: var(--blue); background: rgba(88,196,221,0.18); color: var(--blue); transform: translateY(-4px); }
+  .cell.ptr-r { border-color: var(--gold); background: rgba(240,172,95,0.18); color: var(--gold); transform: translateY(-4px); }
+  .cell.ptr-mid { border-color: var(--purple); background: rgba(179,146,240,0.22); color: var(--purple); transform: translateY(-6px); }
+  .cell.win { border-color: var(--green); background: rgba(131,193,103,0.24); color: var(--green); box-shadow: 0 0 16px rgba(131,193,103,0.3); transform: scale(1.06); }
+  .cell.window { border-color: var(--blue); background: rgba(88,196,221,0.18); color: var(--blue); }
+  .cell.warn { border-color: var(--red); background: rgba(252,98,85,0.2); color: var(--red); }
+
+  .ptr-tag {
+    font-size: 0.74rem;
+    font-family: monospace;
+    font-weight: 800;
+    min-height: 18px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .ptr-tag.blue { color: var(--blue); background: rgba(88,196,221,0.14); }
+  .ptr-tag.gold { color: var(--gold); background: rgba(240,172,95,0.14); }
+  .ptr-tag.purple { color: var(--purple); background: rgba(179,146,240,0.18); }
+  .idx-lbl { font-size: 0.7rem; color: var(--muted); font-family: monospace; }
+
+  /* Bars for sorting */
+  .bars-wrap {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 12px;
+    height: 190px;
+    width: 100%;
+    padding: 0 12px;
+  }
+  .bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 44px;
+  }
+  .bar {
+    width: 100%;
+    border-radius: 6px 6px 2px 2px;
+    background: #2b384e;
+    border: 1px solid #3c4d6b;
+    transition: height 0.25s ease, background 0.2s ease;
+  }
+  .bar.cmp { background: var(--gold); border-color: var(--gold); }
+  .bar.swap { background: var(--red); border-color: var(--red); }
+  .bar.done { background: var(--green); border-color: var(--green); }
+  .bar-val { font-family: monospace; font-size: 0.85rem; font-weight: 700; }
+
+  /* Hash Map Visual */
+  .map-rack {
+    width: 100%;
+    max-width: 520px;
+    background: #0f131b;
+    border: 1px dashed var(--purple);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .map-rack-title { font-size: 0.76rem; color: var(--purple); font-family: monospace; margin-bottom: 8px; font-weight: 700; }
+  .map-pills { display: flex; gap: 8px; flex-wrap: wrap; min-height: 28px; }
+  .map-pill {
+    background: rgba(179,146,240,0.15);
+    border: 1px solid var(--purple);
+    color: var(--text);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.82rem;
+  }
+  .map-pill.hit { background: rgba(131,193,103,0.28); border-color: var(--green); color: var(--green); font-weight: 700; }
+
+  /* Tree SVG + Queue/Stack */
+  .tree-layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 12px;
+    width: 100%;
+    align-items: center;
+  }
+  @media (max-width: 640px) { .tree-layout { grid-template-columns: 1fr; } }
+  .struct-box {
+    background: #0f131b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .struct-items { display: flex; gap: 6px; flex-wrap: wrap; min-height: 30px; }
+  .struct-item {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    background: rgba(88,196,221,0.15);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+  }
+  .struct-item.visited { background: rgba(131,193,103,0.18); border-color: var(--green); color: var(--green); }
+
+  /* Narration & Controls */
+  .narration {
+    background: #0d121a;
+    border-left: 3px solid var(--gold);
+    padding: 12px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .narration b { color: var(--gold); }
+
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    background: var(--blue);
+    color: #080a0f;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: filter 0.12s;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.secondary { background: #1e2636; color: var(--text); border: 1px solid var(--border); font-weight: 600; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Debugger Code Panel */
+  .vars-box {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .var-chip {
+    background: #141a24;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 9px;
+    font-family: monospace;
+    font-size: 0.82rem;
+  }
+  .var-chip span { color: var(--muted); }
+  .var-chip b { color: var(--gold); }
+
+  .code-lines {
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 0;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.81rem;
+    line-height: 1.55;
+    overflow-x: auto;
+  }
+  .code-line {
+    display: flex;
+    padding: 1px 12px;
+    white-space: pre;
+    color: #c9d1d9;
+  }
+  .code-line .ln {
+    width: 26px;
+    color: #484f58;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .code-line.active-line {
+    background: rgba(240,172,95,0.18);
+    border-left: 3px solid var(--gold);
+    color: #fff;
+    font-weight: 600;
+  }
+  .code-line.active-line .ln { color: var(--gold); }
+
+  .q-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+  }
+  .q-item {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 0.83rem;
+  }
+  .q-item b { color: var(--green); display: block; margin-bottom: 2px; }
+  .q-item span { color: var(--muted); font-size: 0.78rem; }
+
+  /* Pattern Trainer Tab */
+  .trainer-wrap { max-width: 820px; width: 100%; margin: 0 auto; }
+  .opt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .opt-btn {
+    background: #0f131b;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: all 0.15s;
+  }
+  .opt-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .feedback { padding: 12px 14px; border-radius: 8px; font-size: 0.88rem; line-height: 1.5; display: none; }
+  .feedback.ok { display: block; background: rgba(131,193,103,0.15); border: 1px solid var(--green); color: var(--green); }
+  .feedback.err { display: block; background: rgba(252,98,85,0.15); border: 1px solid var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>DSA</span> Interactive Studio</h1>
+    <div class="sub">Beginner-first analogies · Live Python Debugger · Custom Inputs · Interview Pattern Trainer</div>
+  </div>
+  <div class="suite-nav">
+    <a href="ml_studio.html">ML Math</a>
+    <a href="pandas_sql_studio.html">Pandas &amp; SQL</a>
+    <a href="algo_studio.html" class="cur">DSA Studio</a>
+    <a href="py_algolab.html">PyAlgoLab</a>
+  </div>
+</header>
+
+<nav id="nav"></nav>
+
+<main id="main-area"></main>
+
+<script>
+const TABS = [
+  { id: "two_ptr",  label: "1. Two Pointers" },
+  { id: "window",   label: "2. Sliding Window" },
+  { id: "bsearch",  label: "3. Binary Search" },
+  { id: "hashmap",  label: "4. Hash Map" },
+  { id: "sort",     label: "5. Sorting Bars" },
+  { id: "tree",     label: "6. Tree: BFS vs DFS" },
+  { id: "stack",    label: "7. Stack" },
+  { id: "llist",    label: "8. Linked List" },
+  { id: "dp",       label: "9. Dynamic Prog (DP)" },
+  { id: "trainer",  label: "10. Spot the Pattern (Quiz)" }
+];
+
+const INFO = {
+  two_ptr: {
+    title: "Two Pointers — Sorted Two Sum",
+    analogy: "<b>Real-Life Story:</b> Imagine books lined up on a shelf by price (₹2 to ₹15) and you want two books costing <b>exactly your budget</b>. Put your left finger on the cheapest book and your right finger on the most expensive. Too expensive? Move your right finger left. Too cheap? Move your left finger right!",
+    slow: "<b>Brute Force — O(n²):</b> Check every book against every other book with nested loops. On 1,000 books = ~500,000 checks!",
+    fast: "<b>Two Pointers — O(n):</b> Both fingers walk inward once. On 1,000 books = at most 1,000 steps!",
+    clue: "Sorted array + find a pair, triplet, or check a palindrome.",
+    why: "Because the array is sorted, if <code>nums[L] + nums[R]</code> is too big, pairing <code>nums[R]</code> with any bigger number to the right of L would be even bigger—so we can safely eliminate <code>R</code> forever!",
+    trap: "<b>Common Trap:</b> Trying to use Two Pointers on an <b>unsorted</b> array (it won't work unless you sort first or use a Hash Map!).",
+    code: [
+      "def two_sum_sorted(nums, target):",
+      "    L, R = 0, len(nums) - 1",
+      "    while L < R:",
+      "        total = nums[L] + nums[R]",
+      "        if total == target:",
+      "            return [L, R]      # Match found!",
+      "        elif total < target:",
+      "            L += 1             # Too small -> move L right",
+      "        else:",
+      "            R -= 1             # Too big   -> move R left",
+      "    return None                # No pair exists"
+    ],
+    questions: [
+      ["Two Sum II (Sorted Array)", "Classic L & R inward walk"],
+      ["Valid Palindrome", "Compare s[L] and s[R] moving inward"],
+      ["Container With Most Water", "Always move the shorter wall inward"],
+      ["Remove Duplicates (Sorted)", "Slow writer pointer + fast reader pointer"]
+    ]
+  },
+  window: {
+    title: "Sliding Window — Max Sum of Size K",
+    analogy: "<b>Real-Life Story:</b> Imagine looking out a train window that fits <b>3 houses at a time</b>. As the train moves 1 house forward, you don't recount all 3 houses—you just <b>add the 1 new house entering</b> and <b>subtract the 1 old house leaving</b>!",
+    slow: "<b>Brute Force — O(n × k):</b> Re-add all k numbers from scratch at every single position.",
+    fast: "<b>Sliding Window — O(n):</b> Each number enters once (+new) and leaves once (-old).",
+    clue: "Contiguous subarray or substring (max sum, longest unique substring, stock profit).",
+    why: "Instead of re-summing all <code>k</code> elements every step, reusing the previous sum and doing just <code>+ nums[i] - nums[i - k]</code> keeps each step O(1)!",
+    trap: "<b>Common Trap:</b> Off-by-one error—the element leaving the window is <code>nums[i - k]</code>, not <code>nums[i - k + 1]</code>.",
+    code: [
+      "def max_subarray_k(nums, k):",
+      "    window = sum(nums[:k])",
+      "    best = window",
+      "    for i in range(k, len(nums)):",
+      "        window = window + nums[i] - nums[i - k]",
+      "        if window > best:",
+      "            best = window",
+      "    return best"
+    ],
+    questions: [
+      ["Max Sum Subarray of Size K", "Fixed-size window +new / -old"],
+      ["Longest Substring Without Repeats", "Expand R, shrink L when duplicate appears"],
+      ["Best Time to Buy & Sell Stock", "Track min buy price while sliding sell day"],
+      ["Minimum Size Subarray Sum", "Shrink window while sum >= target"]
+    ]
+  },
+  bsearch: {
+    title: "Binary Search — Chop in Half",
+    analogy: "<b>Real-Life Story:</b> Looking up <b>'Rahul'</b> in a 1,000-page dictionary? You NEVER start at page 1! You open right in the middle ('M'). Since 'R' comes after 'M', you throw away the entire first 500 pages in ONE move!",
+    slow: "<b>Linear Search — O(n):</b> Check 1 item at a time. On 1,000,000 items = up to 1,000,000 steps!",
+    fast: "<b>Binary Search — O(log n):</b> Cut in half every step. On 1,000,000 items = only 20 steps!",
+    clue: "Sorted list, or finding the exact boundary/minimum speed/capacity.",
+    why: "Every single comparison eliminates <b>50%</b> of the remaining elements. Cutting 1,000,000 in half takes only 20 steps (2²⁰ > 1,000,000)!",
+    trap: "<b>Common Trap:</b> Writing <code>L = mid</code> instead of <code>L = mid + 1</code> (causes an infinite loop!), or writing <code>L &lt; R</code> instead of <code>L &lt;= R</code> (misses the last element).",
+    code: [
+      "def binary_search(nums, target):",
+      "    L, R = 0, len(nums) - 1",
+      "    while L <= R:",
+      "        mid = (L + R) // 2",
+      "        if nums[mid] == target:",
+      "            return mid         # Found!",
+      "        elif nums[mid] < target:",
+      "            L = mid + 1        # Throw away left half",
+      "        else:",
+      "            R = mid - 1        # Throw away right half",
+      "    return -1                  # Not in array"
+    ],
+    questions: [
+      ["Binary Search (Classic)", "Exact template above"],
+      ["Search Insert Position", "Return L when loop ends"],
+      ["Search in Rotated Sorted Array", "Check which half is sorted first"],
+      ["Koko Eating Bananas", "Binary search over possible eating speeds"]
+    ]
+  },
+  hashmap: {
+    title: "Hash Map — Unsorted Two Sum",
+    analogy: "<b>Real-Life Story:</b> Imagine a party where you want a partner whose ticket number + yours = <b>9</b>. Instead of asking everyone in the room, every guest hangs their ticket on a <b>labeled key rack (dict)</b>. When you walk in with ticket <b>2</b>, you just glance at hook <b>7</b> in 1 second!",
+    slow: "<b>Nested Loops — O(n²):</b> Every person asks every other person.",
+    fast: "<b>Hash Map — O(n):</b> Instant O(1) lookup in Python dict <code>seen</code>!",
+    clue: "Unsorted array, counting frequencies, checking duplicates, or instant lookups.",
+    why: "A Python <code>dict</code> computes a hash address in O(1), so checking <code>if need in seen</code> takes the exact same instant whether there are 10 items or 10 million!",
+    trap: "<b>Common Trap:</b> Inserting <code>seen[num] = i</code> <b>before</b> checking <code>if need in seen</code>—that can accidentally pair a number with itself (e.g., 4 + 4 = 8 when there's only one 4)!",
+    code: [
+      "def two_sum(nums, target):",
+      "    seen = {}                  # Key rack: {number: index}",
+      "    for i, num in enumerate(nums):",
+      "        need = target - num",
+      "        if need in seen:       # Instant O(1) check!",
+      "            return [seen[need], i]",
+      "        seen[num] = i          # Hang num on rack",
+      "    return None"
+    ],
+    questions: [
+      ["Two Sum (#1 LeetCode Question!)", "Store {num: index} as you scan"],
+      ["Valid Anagram", "Count letter frequencies in a dict"],
+      ["Contains Duplicate", "Use a Python set for O(1) membership"],
+      ["Group Anagrams", "Group words by sorted tuple key"]
+    ]
+  },
+  sort: {
+    title: "Sorting Visualized — Bubble vs. Selection Sort",
+    analogy: "<b>Real-Life Story:</b> <b>Bubble Sort</b> compares side-by-side cards and swaps them so the biggest card floats to the right like a bubble. <b>Selection Sort</b> scans the whole unsorted row, picks the smallest card, and places it in front!",
+    slow: "<b>Bubble / Selection — O(n²):</b> Great to learn how comparisons & swaps work visually.",
+    fast: "<b>Python .sort() (Timsort) — O(n log n):</b> Use built-in <code>nums.sort()</code> in real interviews!",
+    clue: "Interval overlaps, kth largest, or enabling Two Pointers / Binary Search.",
+    why: "In Bubble Sort, after pass <code>i</code>, the <code>i</code> biggest numbers are already locked at the right end—that's why the inner loop shrinks to <code>n - i - 1</code>!",
+    trap: "<b>Common Trap:</b> Writing Bubble Sort in a real interview—always use Python's built-in <code>nums.sort()</code> (O(n log n)) unless specifically asked to implement a sort.",
+    code: [
+      "# Bubble Sort (adjacent swaps):",
+      "for i in range(n):",
+      "    for j in range(0, n - i - 1):",
+      "        if arr[j] > arr[j + 1]:",
+      "            arr[j], arr[j+1] = arr[j+1], arr[j]",
+      "",
+      "# Real interview shortcut — O(n log n):",
+      "arr.sort()"
+    ],
+    questions: [
+      ["Merge Intervals", "Sort by start time, then merge overlaps"],
+      ["Meeting Rooms", "Sort intervals and check if next.start < prev.end"],
+      ["Sort Colors (0, 1, 2)", "3-pointer Dutch National Flag"],
+      ["Kth Largest Element", "Sort or use a Min-Heap"]
+    ]
+  },
+  tree: {
+    title: "Trees: BFS (Queue) vs. DFS (Stack)",
+    analogy: "<b>Real-Life Story:</b> <b>BFS</b> is like ripples in a pond—it explores every neighbor 1 step away before going 2 steps away (perfect for <b>shortest path</b>!). <b>DFS</b> is like exploring a maze—pick one hallway and go all the way to the dead end before backtracking!",
+    slow: "<b>BFS uses a Queue (FIFO):</b> First in, first out → visits level by level (1 → 2, 3 → 4, 5, 6).",
+    fast: "<b>DFS uses a Stack (LIFO):</b> Last in, first out → dives deep down one branch first (1 → 2 → 4 → 5 → 3 → 6).",
+    clue: "Trees, folders, social networks, grids/islands, or shortest path.",
+    why: "Because a Queue is FIFO, BFS explores every node at distance 1 before any node at distance 2—which mathematically guarantees the first time you reach the target is the <b>shortest path</b>!",
+    trap: "<b>Common Trap:</b> On graphs/grids with cycles, forgetting a <code>visited = set()</code> causes an infinite loop (trees don't have cycles, so trees don't need one).",
+    code: [
+      "from collections import deque",
+      "def explore(root, mode='BFS'):",
+      "    box = deque([root])        # Queue (BFS) or Stack (DFS)",
+      "    while box:",
+      "        node = box.popleft() if mode=='BFS' else box.pop()",
+      "        visit(node)",
+      "        # Add children to box",
+      "        push_children(box, node)"
+    ],
+    questions: [
+      ["Binary Tree Level Order Traversal", "Classic BFS with a deque Queue"],
+      ["Maximum Depth of Binary Tree", "Classic DFS (recursion or Stack)"],
+      ["Number of Islands (Grid)", "Run BFS/DFS from each '1' cell"],
+      ["Shortest Path in a Maze", "Always use BFS for unweighted shortest path!"]
+    ]
+  },
+  stack: {
+    title: "Stack — Valid Parentheses",
+    analogy: "<b>Real-Life Story:</b> Think of a <b>stack of plates</b> (LIFO — Last In, First Out). Every opening bracket <code>(</code> <code>[</code> <code>{</code> puts a plate on top. Every closing bracket must match the <b>topmost plate</b> and remove it!",
+    slow: "<b>Repeated String Replace — O(n²):</b> Keep scanning & deleting <code>()</code>, <code>[]</code>, <code>{}</code> over and over.",
+    fast: "<b>Stack — O(n):</b> One single pass! Push openers, pop and match closers in O(1).",
+    clue: "Matching brackets, Undo/Redo, Backspace strings, or Next Greater Element.",
+    why: "The most recently opened bracket MUST be the first one closed—which is literally the definition of a LIFO Stack!",
+    trap: "<b>Common Trap:</b> Forgetting to check <code>if not stack</code> before popping (crashes on input like <code>')'</code>), or forgetting <code>return len(stack) == 0</code> at the end (fails on <code>'((('</code>)!",
+    code: [
+      "def is_valid(s):",
+      "    stack = []",
+      "    match = {')':'(', ']':'[', '}':'{'}",
+      "    for ch in s:",
+      "        if ch in '([{':",
+      "            stack.append(ch)       # Push opener",
+      "        else:",
+      "            if not stack or stack[-1] != match[ch]:",
+      "                return False       # Mismatch!",
+      "            stack.pop()            # Matched -> pop!",
+      "    return len(stack) == 0         # Must be empty!"
+    ],
+    questions: [
+      ["Valid Parentheses", "Exact template above!"],
+      ["Min Stack", "Keep a second stack tracking minimums"],
+      ["Daily Temperatures", "Monotonic stack for next warmer day"],
+      ["Evaluate Reverse Polish Notation", "Push numbers, pop 2 on operator"]
+    ]
+  },
+  llist: {
+    title: "Linked List — Reverse a Linked List",
+    analogy: "<b>Real-Life Story:</b> Imagine 4 people holding hands in a line pointing right (<code>1 → 2 → 3 → 4</code>). To reverse the line without losing anyone, save who's <b>next</b> first, then turn <b>curr</b> around to point at <b>prev</b>, and step forward!",
+    slow: "<b>Copy to Array — O(n) extra space:</b> Dump values to a list and rebuild a new linked list.",
+    fast: "<b>3 Pointers (prev, curr, nxt) — O(1) space:</b> Flip arrows in place with zero extra memory!",
+    clue: "Linked list reversal, cycle detection (Fast & Slow pointers), or merging two sorted lists.",
+    why: "You MUST save <code>nxt = curr.next</code> BEFORE flipping <code>curr.next = prev</code>—otherwise you break the chain and lose the rest of the list!",
+    trap: "<b>Common Trap:</b> Returning <code>curr</code> instead of <code>prev</code> at the end! When the loop finishes, <code>curr</code> is <code>None</code> and <code>prev</code> is the new head.",
+    code: [
+      "def reverse_list(head):",
+      "    prev, curr = None, head",
+      "    while curr:",
+      "        nxt = curr.next            # 1. Save rest of list",
+      "        curr.next = prev           # 2. Flip arrow backward!",
+      "        prev = curr                # 3. Move prev forward",
+      "        curr = nxt                 # 4. Move curr forward",
+      "    return prev                    # prev is the new head!"
+    ],
+    questions: [
+      ["Reverse Linked List", "Exact 3-pointer template above!"],
+      ["Linked List Cycle", "Fast moves 2 steps, Slow moves 1 step"],
+      ["Middle of Linked List", "When Fast hits end, Slow is at middle"],
+      ["Merge Two Sorted Lists", "Dummy node + compare heads"]
+    ]
+  },
+  dp: {
+    title: "Dynamic Programming — Climbing Stairs",
+    analogy: "<b>Real-Life Story:</b> You can climb <b>1 or 2 steps</b> at a time. To reach step 5, you MUST have come from either <b>step 4</b> or <b>step 3</b>! So <code>ways(5) = ways(4) + ways(3)</code>. Write answers in a notebook (table) so you NEVER recalculate the same step twice!",
+    slow: "<b>Plain Recursion — O(2ⁿ):</b> Recalculates the same steps millions of times! For n=40 → 1 billion calls!",
+    fast: "<b>DP Table — O(n):</b> Fill 1 table left-to-right. For n=40 → just 40 tiny additions!",
+    clue: "'How many ways...', 'Minimum cost to reach...', or 'Maximum profit / knapsack'.",
+    why: "DP is just <b>smart remembering</b>: solve tiny subproblems first (step 1, step 2) and reuse those saved answers to build bigger ones!",
+    trap: "<b>Common Trap:</b> Forgetting base cases (<code>dp[1] = 1, dp[2] = 2</code>) or overthinking—always ask: <i>'What previous step(s) can lead directly to step i?'</i>",
+    code: [
+      "def climb_stairs(n):",
+      "    dp = [0] * (n + 1)",
+      "    dp[1], dp[2] = 1, 2            # Base cases",
+      "    for i in range(3, n + 1):",
+      "        dp[i] = dp[i - 1] + dp[i - 2]  # Reuse saved!",
+      "    return dp[n]"
+    ],
+    questions: [
+      ["Climbing Stairs", "dp[i] = dp[i-1] + dp[i-2]"],
+      ["House Robber", "dp[i] = max(dp[i-1], nums[i] + dp[i-2])"],
+      ["Coin Change", "Min coins to make each amount 1..target"],
+      ["Longest Common Subsequence", "2D DP table comparing two strings"]
+    ]
+  }
+};
+
+// ==================== STEP GENERATORS ====================
+function genTwoPtrSteps(target) {
+  const arr = [2, 4, 6, 9, 11, 15];
+  const steps = [];
+  let L = 0, R = arr.length - 1;
+  steps.push({ arr, L, R, line: 1, vars: { target, L, R }, msg: `Initialize <b>L = 0</b> (val ${arr[L]}) and <b>R = ${R}</b> (val ${arr[R]}). Goal: find two numbers adding to <b>${target}</b>.` });
+  while (L < R) {
+    const total = arr[L] + arr[R];
+    if (total === target) {
+      steps.push({ arr, L, R, win: [L, R], line: 5, vars: { target, L, R, total }, msg: `<b>${arr[L]} + ${arr[R]} = ${total} == ${target}</b>! Exact match found at indices <b>[${L}, ${R}]</b>!` });
+      return steps;
+    } else if (total < target) {
+      steps.push({ arr, L, R, line: 7, vars: { target, L, R, total }, msg: `${arr[L]} + ${arr[R]} = <b>${total}</b>, which is <b>smaller</b> than ${target}. Move <b>L right</b> (L = ${L + 1}) to get a larger sum.` });
+      L++;
+    } else {
+      steps.push({ arr, L, R, line: 9, vars: { target, L, R, total }, msg: `${arr[L]} + ${arr[R]} = <b>${total}</b>, which is <b>bigger</b> than ${target}. Move <b>R left</b> (R = ${R - 1}) to get a smaller sum.` });
+      R--;
+    }
+  }
+  steps.push({ arr, L, R, line: 10, vars: { target, L, R }, msg: `Pointers met (L == R) with no match. No pair sums to <b>${target}</b> → return <b>None</b>.` });
+  return steps;
+}
+
+function genWindowSteps(k) {
+  const arr = [3, 1, 5, 2, 6, 1, 4];
+  const steps = [];
+  let winSum = 0;
+  for (let i = 0; i < k; i++) winSum += arr[i];
+  let best = winSum, bestRange = Array.from({length: k}, (_, i) => i);
+  steps.push({ arr, winIdx: [...bestRange], best, winSum, line: 2, vars: { k, window: winSum, best }, msg: `First window of size <b>${k}</b>: [${bestRange.map(i => arr[i]).join(', ')}] → sum = <b>${winSum}</b>. Best = <b>${best}</b>.` });
+  for (let i = k; i < arr.length; i++) {
+    const add = arr[i], rem = arr[i - k];
+    winSum = winSum + add - rem;
+    const curRange = Array.from({length: k}, (_, j) => i - k + 1 + j);
+    const isNewBest = winSum > best;
+    if (isNewBest) { best = winSum; bestRange = [...curRange]; }
+    steps.push({
+      arr, winIdx: curRange, win: isNewBest ? curRange : null, addIdx: i, remIdx: i - k,
+      line: isNewBest ? 6 : 4,
+      vars: { i, "+new": add, "-old": rem, window: winSum, best },
+      msg: `Slide right: <b>+${add}</b> (entering) and <b>-${rem}</b> (leaving) → new sum = <b>${winSum}</b>. ${isNewBest ? `New record! Best = <b>${best}</b>!` : `Best stays <b>${best}</b>.`}`
+    });
+  }
+  steps.push({ arr, winIdx: bestRange, win: bestRange, line: 7, vars: { k, best }, msg: `Done! Maximum subarray sum of size ${k} is <b>${best}</b> (highlighted in green).` });
+  return steps;
+}
+
+function genBSearchSteps(target) {
+  const arr = [2, 5, 8, 12, 14, 19, 23, 29];
+  const steps = [];
+  let L = 0, R = arr.length - 1;
+  const dim = () => arr.map((_, i) => i).filter(i => i < L || i > R);
+  steps.push({ arr, L, R, dim: [], line: 1, vars: { target, L, R }, msg: `Start searching entire sorted array [0..${R}] for <b>target = ${target}</b>.` });
+  while (L <= R) {
+    const mid = Math.floor((L + R) / 2);
+    if (arr[mid] === target) {
+      steps.push({ arr, L, R, mid, dim: dim(), win: [mid], line: 5, vars: { target, L, R, mid, "nums[mid]": arr[mid] }, msg: `Middle index <b>mid = ${mid}</b> holds <b>${arr[mid]} == ${target}</b> → FOUND in just ${steps.length} check(s)!` });
+      return steps;
+    } else if (arr[mid] < target) {
+      steps.push({ arr, L, R, mid, dim: dim(), line: 7, vars: { target, L, R, mid, "nums[mid]": arr[mid] }, msg: `<b>mid = ${mid}</b> (val ${arr[mid]}) is <b>less than ${target}</b> → throw away entire left half (0..${mid})! Set <b>L = ${mid + 1}</b>.` });
+      L = mid + 1;
+    } else {
+      steps.push({ arr, L, R, mid, dim: dim(), line: 9, vars: { target, L, R, mid, "nums[mid]": arr[mid] }, msg: `<b>mid = ${mid}</b> (val ${arr[mid]}) is <b>greater than ${target}</b> → throw away entire right half (${mid}..${arr.length - 1})! Set <b>R = ${mid - 1}</b>.` });
+      R = mid - 1;
+    }
+  }
+  steps.push({ arr, L, R, dim: arr.map((_, i) => i), line: 10, vars: { target, L, R }, msg: `Search range empty (L > R). <b>${target}</b> is NOT in the array → return <b>-1</b>.` });
+  return steps;
+}
+
+function genHashSteps(target) {
+  const arr = [7, 1, 5, 2, 8, 4];
+  const steps = [];
+  const seen = {};
+  steps.push({ arr, seen: {...seen}, line: 1, vars: { target, seen: "{}" }, msg: `Start with an empty key rack <b>seen = {}</b>. Goal: find two numbers adding to <b>${target}</b>.` });
+  for (let i = 0; i < arr.length; i++) {
+    const num = arr[i], need = target - num;
+    if (need in seen) {
+      steps.push({
+        arr, cur: i, seen: {...seen}, hitKey: need, win: [seen[need], i], line: 5,
+        vars: { i, num, need, match: `seen[${need}] = ${seen[need]}` },
+        msg: `At index ${i} (val <b>${num}</b>): we need <b>${target} - ${num} = ${need}</b>. Glance at the key rack → <b>${need} IS THERE (index ${seen[need]})</b>! Return <b>[${seen[need]}, ${i}]</b>!`
+      });
+      return steps;
+    }
+    steps.push({
+      arr, cur: i, seen: {...seen}, line: 6,
+      vars: { i, num, need, "in seen?": "No" },
+      msg: `At index ${i} (val <b>${num}</b>): we need <b>${need}</b>. Not on rack yet → hang <b>${num}: idx ${i}</b> on the rack.`
+    });
+    seen[num] = i;
+  }
+  steps.push({ arr, seen: {...seen}, line: 7, vars: { target }, msg: `Scanned all numbers—no pair sums to <b>${target}</b> → return <b>None</b>.` });
+  return steps;
+}
+
+function genSortSteps(baseArr, algo) {
+  const a = [...baseArr];
+  const n = a.length;
+  const steps = [];
+  let comps = 0, swaps = 0;
+  const done = [];
+  steps.push({ arr: [...a], done: [], line: 1, vars: { algo, comps, swaps }, msg: `Initial unsorted bars: [${a.join(', ')}]. Click Step to watch ${algo} Sort!` });
+  if (algo === 'Bubble') {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n - i - 1; j++) {
+        comps++;
+        if (a[j] > a[j + 1]) {
+          steps.push({ arr: [...a], cmp: [j, j+1], done: [...done], line: 3, vars: { i, j, comps, swaps }, msg: `Compare <b>${a[j]}</b> and <b>${a[j+1]}</b>: ${a[j]} > ${a[j+1]} → need to SWAP!` });
+          [a[j], a[j+1]] = [a[j+1], a[j]];
+          swaps++;
+          steps.push({ arr: [...a], swap: [j, j+1], done: [...done], line: 4, vars: { i, j, comps, swaps }, msg: `Swapped! Now <b>${a[j]}</b> is before <b>${a[j+1]}</b>.` });
+        } else {
+          steps.push({ arr: [...a], cmp: [j, j+1], done: [...done], line: 3, vars: { i, j, comps, swaps }, msg: `Compare <b>${a[j]}</b> and <b>${a[j+1]}</b>: already in order—no swap.` });
+        }
+      }
+      done.push(n - 1 - i);
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      let minIdx = i;
+      for (let j = i + 1; j < n; j++) {
+        comps++;
+        if (a[j] < a[minIdx]) minIdx = j;
+        steps.push({ arr: [...a], cmp: [minIdx, j], done: [...done], line: 2, vars: { i, j, min: a[minIdx], comps, swaps }, msg: `Scanning for smallest from index ${i}: current smallest is <b>${a[minIdx]}</b> (idx ${minIdx}).` });
+      }
+      if (minIdx !== i) {
+        [a[i], a[minIdx]] = [a[minIdx], a[i]];
+        swaps++;
+        steps.push({ arr: [...a], swap: [i, minIdx], done: [...done], line: 4, vars: { i, minIdx, comps, swaps }, msg: `Placed smallest value <b>${a[i]}</b> at front position ${i}!` });
+      }
+      done.push(i);
+    }
+  }
+  steps.push({ arr: [...a], done: a.map((_, i) => i), line: 7, vars: { comps, swaps, status: "Sorted!" }, msg: `All bars sorted: <b>[${a.join(', ')}]</b> in ${comps} comparisons and ${swaps} swaps!` });
+  return steps;
+}
+
+function genTreeSteps(mode) {
+  // Tree: 1 -> (2, 3), 2 -> (4, 5), 3 -> (6)
+  const children = { 1: [2, 3], 2: [4, 5], 3: [6], 4: [], 5: [], 6: [] };
+  const steps = [];
+  const box = [1];
+  const visited = [];
+  steps.push({
+    mode, box: [...box], visited: [], cur: null, line: 2,
+    vars: { mode, [mode==='BFS'?'Queue':'Stack']: `[${box.join(', ')}]` },
+    msg: `Start with Root <b>1</b> inside the <b>${mode==='BFS' ? 'Queue (FIFO — first in, first out)' : 'Stack (LIFO — last in, first out)'}</b>.`
+  });
+  while (box.length > 0) {
+    const node = mode === 'BFS' ? box.shift() : box.pop();
+    visited.push(node);
+    const ch = children[node];
+    if (mode === 'BFS') {
+      ch.forEach(c => box.push(c));
+    } else {
+      // Push right then left so left is popped first
+      [...ch].reverse().forEach(c => box.push(c));
+    }
+    steps.push({
+      mode, box: [...box], visited: [...visited], cur: node, line: 4,
+      vars: { popped: node, [mode==='BFS'?'Queue':'Stack']: `[${box.join(', ')}]`, visited: visited.join('→') },
+      msg: `${mode==='BFS' ? 'Pop from FRONT of Queue' : 'Pop from TOP of Stack'}: visit <b>${node}</b>. ${ch.length ? `Push children <b>[${ch.join(', ')}]</b>.` : `Leaf node (no children).`}`
+    });
+  }
+  steps.push({
+    mode, box: [], visited: [...visited], cur: null, done: true, line: 5,
+    vars: { mode, order: visited.join(' → ') },
+    msg: `Finished ${mode}! Full traversal order: <b>${visited.join(' → ')}</b>.`
+  });
+  return steps;
+}
+
+function genStackSteps(s) {
+  const arr = s.split('');
+  const match = { ')': '(', ']': '[', '}': '{' };
+  const stack = [];
+  const steps = [];
+  steps.push({ arr, cur: -1, stack: [], line: 1, vars: { s, stack: "[]" }, msg: `Start with an empty stack <b>[]</b>. We'll scan <b>"${s}"</b> left to right.` });
+  for (let i = 0; i < arr.length; i++) {
+    const ch = arr[i];
+    if ('([{'.includes(ch)) {
+      stack.push(ch);
+      steps.push({ arr, cur: i, stack: [...stack], line: 5, vars: { i, ch, stack: JSON.stringify(stack) }, msg: `Saw opener <b>'${ch}'</b> → push onto top of Stack!` });
+    } else {
+      if (!stack.length || stack[stack.length - 1] !== match[ch]) {
+        steps.push({ arr, cur: i, warn: [i], stack: [...stack], line: 8, vars: { i, ch, top: stack[stack.length-1] || "empty", result: "False" }, msg: `Saw closer <b>'${ch}'</b>, expected <b>'${match[ch]}'</b> on top, got <b>'${stack[stack.length-1] || "empty"}'</b> → MISMATCH! Return <b>False</b>.` });
+        return steps;
+      }
+      const popped = stack.pop();
+      steps.push({ arr, cur: i, win: [i], stack: [...stack], line: 9, vars: { i, ch, matched: popped, stack: JSON.stringify(stack) }, msg: `Saw closer <b>'${ch}'</b> → matches top <b>'${popped}'</b>! Pop it off the Stack.` });
+    }
+  }
+  const ok = stack.length === 0;
+  steps.push({ arr, cur: -1, win: ok ? arr.map((_,i)=>i) : null, stack: [...stack], line: 10, vars: { stack: JSON.stringify(stack), result: String(ok) }, msg: ok ? `Stack is completely empty → <b>Valid Parentheses (True)</b>!` : `Reached end, but stack still has <b>${JSON.stringify(stack)}</b> unclosed → return <b>False</b>!` });
+  return steps;
+}
+
+function genLListSteps() {
+  const vals = [10, 20, 30, 40];
+  // dirs[i]: 'R' means i -> i+1, 'L' means i -> i-1 (or None if i===0)
+  const dirs = ['R', 'R', 'R', 'NONE'];
+  const steps = [];
+  let prev = -1, curr = 0;
+  steps.push({ vals, dirs: [...dirs], prev, curr, nxt: null, line: 1, vars: { prev: "None", curr: "10" }, msg: `Start: <b>prev = None</b>, <b>curr = 10</b>. All arrows point right (10 → 20 → 30 → 40).` });
+  while (curr < vals.length) {
+    const nxt = curr + 1 < vals.length ? curr + 1 : -1;
+    steps.push({ vals, dirs: [...dirs], prev, curr, nxt, line: 3, vars: { prev: prev===-1?"None":vals[prev], curr: vals[curr], nxt: nxt===-1?"None":vals[nxt] }, msg: `1. Save <b>nxt = ${nxt===-1?"None":vals[nxt]}</b> so we don't lose the rest of the list!` });
+    dirs[curr] = 'L';
+    steps.push({ vals, dirs: [...dirs], prev, curr, nxt, flipped: curr, line: 4, vars: { prev: prev===-1?"None":vals[prev], curr: vals[curr], nxt: nxt===-1?"None":vals[nxt] }, msg: `2. Flip arrow! <b>${vals[curr]}.next</b> now points backward to <b>${prev===-1?"None":vals[prev]}</b>!` });
+    prev = curr;
+    curr = nxt === -1 ? vals.length : nxt;
+    steps.push({ vals, dirs: [...dirs], prev, curr: curr < vals.length ? curr : -1, nxt: null, line: 6, vars: { prev: vals[prev], curr: curr<vals.length?vals[curr]:"None" }, msg: `3. Step both pointers forward: <b>prev = ${vals[prev]}</b>, <b>curr = ${curr<vals.length?vals[curr]:"None"}</b>.` });
+  }
+  steps.push({ vals, dirs: [...dirs], prev, curr: -1, done: true, line: 7, vars: { new_head: vals[prev] }, msg: `Done! <b>curr</b> is None, so return <b>prev (${vals[prev]})</b> — the list is now reversed: <b>40 → 30 → 20 → 10</b>!` });
+  return steps;
+}
+
+function genDPSteps(n) {
+  const dp = Array(n + 1).fill(0);
+  const steps = [];
+  dp[1] = 1; dp[2] = 2;
+  steps.push({ arr: [...dp], win: [1, 2], line: 2, vars: { n, "dp[1]": 1, "dp[2]": 2 }, msg: `Set base cases: <b>1 way</b> to climb 1 stair, <b>2 ways</b> to climb 2 stairs (1+1 or 2).` });
+  for (let i = 3; i <= n; i++) {
+    dp[i] = dp[i - 1] + dp[i - 2];
+    steps.push({ arr: [...dp], L: i - 2, R: i - 1, mid: i, line: 4, vars: { i, "dp[i-1]": dp[i-1], "dp[i-2]": dp[i-2], "dp[i]": dp[i] }, msg: `To reach stair <b>${i}</b>: come from stair ${i-1} (${dp[i-1]} ways) OR stair ${i-2} (${dp[i-2]} ways) → <b>${dp[i-1]} + ${dp[i-2]} = ${dp[i]} ways</b>!` });
+  }
+  steps.push({ arr: [...dp], win: [n], line: 5, vars: { n, answer: dp[n] }, msg: `Finished! Total distinct ways to climb <b>${n} stairs</b> = <b>${dp[n]}</b> (computed in just O(n) time)!` });
+  return steps;
+}
+
+// ==================== PATTERN TRAINER QUIZ ====================
+const TRAINER_QS = [
+  { q: "You are given a SORTED list of prices and asked to find two items that add up to ₹500 in O(n) time.", ans: "Two Pointers", why: "The keyword is <b>SORTED + find a pair</b> → Two Pointers walks L and R inward in O(n) with O(1) space!" },
+  { q: "Find the longest substring inside a string that has NO repeating characters.", ans: "Sliding Window", why: "<b>Contiguous substring</b> + longest/shortest → expand Right and shrink Left with a Sliding Window!" },
+  { q: "You have 10 million sorted user IDs and need to check if ID #849201 exists in under 25 steps.", ans: "Binary Search", why: "<b>Sorted + ultra-fast lookup</b> → Binary Search cuts 10M in half repeatedly (~24 steps, O(log n))!" },
+  { q: "Given an UNSORTED array of numbers, find two numbers that add up to 20 in O(n) time.", ans: "Hash Map", why: "Because the array is <b>UNSORTED</b>, a Hash Map (Python dict) remembers seen numbers for instant O(1) lookup!" },
+  { q: "You are in a maze grid and want the SHORTEST number of steps from Start to Exit.", ans: "BFS", why: "<b>Shortest path in unweighted grid/graph</b> → ALWAYS use BFS (ripples level by level)!" },
+  { q: "Find the maximum depth (height) of a folder tree on your computer.", ans: "DFS", why: "Exploring all the way down each branch to find depth → classic DFS!" },
+  { q: "Given a list of meeting start/end times like [[1,4], [2,5], [7,9]], merge all overlapping meetings.", ans: "Sorting", why: "<b>Sort by start time first</b>—once sorted, overlapping intervals always sit right next to each other!" },
+  { q: "Check if a string of brackets like '({[]})' is properly opened and closed in order.", ans: "Stack", why: "Last opened must be first closed (LIFO) → classic <b>Stack</b>!" },
+  { q: "Reverse a chain of nodes in place using O(1) extra memory.", ans: "Linked List", why: "Flipping node pointers with <b>prev, curr, nxt</b> → classic <b>Linked List</b>!" },
+  { q: "How many distinct ways can you climb N stairs taking 1 or 2 steps at a time?", ans: "Dynamic Programming", why: "<b>'How many ways...'</b> built from smaller saved answers (<code>dp[i-1] + dp[i-2]</code>) → classic <b>DP</b>!" }
+];
+
+// ==================== APP STATE & RENDER ====================
+let activeTab = "two_ptr";
+let stepIdx = 0;
+let steps = [];
+let playTimer = null;
+
+// Custom inputs state
+let tpTarget = 13;
+let winK = 3;
+let bsTarget = 14;
+let hmTarget = 9;
+let sortArr = [6, 2, 8, 3, 9, 1, 5];
+let sortAlgo = "Bubble";
+let treeMode = "BFS";
+let stackStr = "({[]})";
+let dpN = 6;
+let tqIdx = 0, tqScore = 0, tqTotal = 0;
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+}
+
+function buildSteps() {
+  stopPlay();
+  stepIdx = 0;
+  if (activeTab === "two_ptr") steps = genTwoPtrSteps(tpTarget);
+  else if (activeTab === "window") steps = genWindowSteps(winK);
+  else if (activeTab === "bsearch") steps = genBSearchSteps(bsTarget);
+  else if (activeTab === "hashmap") steps = genHashSteps(hmTarget);
+  else if (activeTab === "sort") steps = genSortSteps(sortArr, sortAlgo);
+  else if (activeTab === "tree") steps = genTreeSteps(treeMode);
+  else if (activeTab === "stack") steps = genStackSteps(stackStr);
+  else if (activeTab === "llist") steps = genLListSteps();
+  else if (activeTab === "dp") steps = genDPSteps(dpN);
+}
+
+function renderNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = TABS.map(t =>
+    `<button class="${t.id === activeTab ? 'active' : ''}" data-id="${t.id}">${t.label}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(b => {
+    b.onclick = () => {
+      activeTab = b.dataset.id;
+      renderNav();
+      if (activeTab !== "trainer") buildSteps();
+      renderMain();
+    };
+  });
+}
+
+function renderStageHTML(st) {
+  if (activeTab === "llist") {
+    let html = `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;">`;
+    html += `<span class="muted" style="font-family:monospace;">None</span>`;
+    st.vals.forEach((v, i) => {
+      const leftArrow = st.dirs[i] === 'L';
+      const rightArrow = i < st.vals.length - 1 && st.dirs[i] === 'R';
+      const tags = [];
+      if (st.prev === i) tags.push('<span class="ptr-tag blue">prev</span>');
+      if (st.curr === i) tags.push('<span class="ptr-tag gold">curr</span>');
+      if (st.nxt === i)  tags.push('<span class="ptr-tag purple">nxt</span>');
+      let cls = 'cell';
+      if (st.done) cls += ' win';
+      else if (st.flipped === i) cls += ' win';
+      else if (st.curr === i) cls += ' ptr-r';
+      else if (st.prev === i) cls += ' ptr-l';
+
+      html += `<span style="font-family:monospace;font-size:1.2rem;font-weight:800;color:${leftArrow ? 'var(--green)' : '#262e3d'};">${leftArrow ? '←' : ' '}</span>`;
+      html += `<div class="cell-wrap"><div style="display:flex;gap:3px;min-height:18px;">${tags.join('')}</div><div class="${cls}">${v}</div><div class="idx-lbl">node</div></div>`;
+      if (i < st.vals.length - 1) {
+        html += `<span style="font-family:monospace;font-size:1.2rem;font-weight:800;color:${rightArrow ? 'var(--blue)' : '#262e3d'};">${rightArrow ? '→' : ' '}</span>`;
+      }
+    });
+    html += `<span class="muted" style="font-family:monospace;">None</span></div>`;
+    return html;
+  }
+
+  if (activeTab === "sort") {
+    const maxV = Math.max(...st.arr);
+    return `<div class="bars-wrap">` + st.arr.map((v, i) => {
+      let cls = "bar";
+      if (st.done && st.done.includes(i)) cls += " done";
+      else if (st.swap && st.swap.includes(i)) cls += " swap";
+      else if (st.cmp && st.cmp.includes(i)) cls += " cmp";
+      const h = Math.round((v / maxV) * 145) + 18;
+      return `<div class="bar-col"><div class="bar-val">${v}</div><div class="${cls}" style="height:${h}px"></div><div class="idx-lbl">${i}</div></div>`;
+    }).join('') + `</div>`;
+  }
+
+  if (activeTab === "tree") {
+    const coords = { 1:[170,38], 2:[95,112], 3:[245,112], 4:[55,186], 5:[135,186], 6:[245,186] };
+    const edges = [[1,2],[1,3],[2,4],[2,5],[3,6]];
+    let svg = `<svg viewBox="0 0 340 225" width="100%" style="max-width:360px;">`;
+    edges.forEach(([u,v]) => {
+      const activeEdge = st.visited.includes(u) && st.visited.includes(v);
+      svg += `<line x1="${coords[u][0]}" y1="${coords[u][1]}" x2="${coords[v][0]}" y2="${coords[v][1]}" stroke="${activeEdge ? '#83c167' : '#30363d'}" stroke-width="${activeEdge ? 3 : 2}" />`;
+    });
+    Object.entries(coords).forEach(([nStr, [cx, cy]]) => {
+      const n = +nStr;
+      let fill = '#141a24', stroke = '#30363d', textCol = '#e6edf3';
+      if (st.cur === n) { fill = 'rgba(240,172,95,0.28)'; stroke = '#f0ac5f'; textCol = '#f0ac5f'; }
+      else if (st.visited.includes(n)) { fill = 'rgba(131,193,103,0.25)'; stroke = '#83c167'; textCol = '#83c167'; }
+      else if (st.box.includes(n)) { fill = 'rgba(88,196,221,0.18)'; stroke = '#58c4dd'; textCol = '#58c4dd'; }
+      svg += `<circle cx="${cx}" cy="${cy}" r="22" fill="${fill}" stroke="${stroke}" stroke-width="2.5" />`;
+      svg += `<text x="${cx}" y="${cy+5}" text-anchor="middle" fill="${textCol}" font-family="monospace" font-size="15" font-weight="700">${n}</text>`;
+    });
+    svg += `</svg>`;
+
+    const boxTitle = st.mode === 'BFS' ? 'Queue (FIFO — Pop Left)' : 'Stack (LIFO — Pop Right)';
+    return `<div class="tree-layout">
+      <div style="display:flex;justify-content:center;">${svg}</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="struct-box">
+          <div style="font-size:0.78rem;color:var(--blue);font-family:monospace;font-weight:700;">${boxTitle}</div>
+          <div class="struct-items">${st.box.length ? st.box.map(x=>`<span class="struct-item">${x}</span>`).join('') : '<span class="muted">empty</span>'}</div>
+        </div>
+        <div class="struct-box">
+          <div style="font-size:0.78rem;color:var(--green);font-family:monospace;font-weight:700;">Visited Order</div>
+          <div class="struct-items">${st.visited.length ? st.visited.map(x=>`<span class="struct-item visited">${x}</span>`).join('') : '<span class="muted">none yet</span>'}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Array-based stages (Two Pointers, Sliding Window, Binary Search, Hash Map)
+  let html = `<div class="arr-row">`;
+  st.arr.forEach((v, i) => {
+    let cls = 'cell';
+    let ptrHtml = '<div class="ptr-tag"></div>';
+    if (st.dim && st.dim.includes(i)) cls += ' dim';
+    if (st.win && st.win.includes(i)) cls += ' win';
+    else if (st.mid === i) cls += ' ptr-mid';
+    else if (st.winIdx && st.winIdx.includes(i)) cls += ' window';
+    else if (st.L === i) cls += ' ptr-l';
+    else if (st.R === i) cls += ' ptr-r';
+    else if (st.cur === i) cls += ' ptr-r';
+
+    const tags = [];
+    if (st.L === i) tags.push('<span class="ptr-tag blue">L</span>');
+    if (st.mid === i) tags.push('<span class="ptr-tag purple">mid</span>');
+    if (st.R === i) tags.push('<span class="ptr-tag gold">R</span>');
+    if (st.cur === i) tags.push('<span class="ptr-tag gold">i</span>');
+    if (st.addIdx === i) tags.push('<span class="ptr-tag blue">+new</span>');
+    if (st.remIdx === i) tags.push('<span class="ptr-tag" style="color:var(--red);background:rgba(252,98,85,0.16);">-old</span>');
+    if (tags.length) ptrHtml = `<div style="display:flex;gap:3px;">${tags.join('')}</div>`;
+
+    html += `<div class="cell-wrap">${ptrHtml}<div class="${cls}">${v}</div><div class="idx-lbl">idx ${i}</div></div>`;
+  });
+  html += `</div>`;
+
+  if (activeTab === "stack") {
+    html += `<div class="map-rack" style="max-width:340px;border-color:var(--blue);">
+      <div class="map-rack-title" style="color:var(--blue);">Stack (LIFO — Top is on the right)</div>
+      <div class="map-pills">${st.stack.length ? st.stack.map((c, idx) =>
+        `<span class="map-pill ${idx===st.stack.length-1?'hit':''}" style="font-size:1rem;font-weight:800;">${c}</span>`
+      ).join('') : '<span class="muted">empty []</span>'}</div>
+    </div>`;
+  }
+  if (activeTab === "hashmap") {
+    const entries = Object.entries(st.seen);
+    html += `<div class="map-rack">
+      <div class="map-rack-title">Python dict: seen = { number : index }</div>
+      <div class="map-pills">${entries.length ? entries.map(([k,v]) =>
+        `<span class="map-pill ${st.hitKey == k ? 'hit' : ''}">${k} → idx ${v}</span>`
+      ).join('') : '<span class="muted">empty {}</span>'}</div>
+    </div>`;
+  }
+  return html;
+}
+
+function renderCustomControls() {
+  if (activeTab === "two_ptr") {
+    return `Target Sum: <select id="ctrl-tp">${[10,13,15,17,20,25].map(v=>`<option value="${v}" ${v===tpTarget?'selected':''}>${v}</option>`).join('')}</select>`;
+  }
+  if (activeTab === "window") {
+    return `Window Size (k): <select id="ctrl-k">${[2,3,4].map(v=>`<option value="${v}" ${v===winK?'selected':''}>k = ${v}</option>`).join('')}</select>`;
+  }
+  if (activeTab === "bsearch") {
+    return `Target to Find: <select id="ctrl-bs">${[2,8,14,23,29,15].map(v=>`<option value="${v}" ${v===bsTarget?'selected':''}>${v}${v===15?' (missing!)':''}</option>`).join('')}</select>`;
+  }
+  if (activeTab === "hashmap") {
+    return `Target Sum: <select id="ctrl-hm">${[6,9,11,12,15].map(v=>`<option value="${v}" ${v===hmTarget?'selected':''}>${v}</option>`).join('')}</select>`;
+  }
+  if (activeTab === "sort") {
+    return `Algorithm: <select id="ctrl-salgo"><option ${sortAlgo==='Bubble'?'selected':''}>Bubble</option><option ${sortAlgo==='Selection'?'selected':''}>Selection</option></select>
+      <button class="btn secondary" id="ctrl-shuf" style="padding:5px 10px;font-size:0.8rem;">Shuffle Bars</button>`;
+  }
+  if (activeTab === "tree") {
+    return `Traversal Mode: <select id="ctrl-tree"><option value="BFS" ${treeMode==='BFS'?'selected':''}>BFS (Queue — Level by Level)</option><option value="DFS" ${treeMode==='DFS'?'selected':''}>DFS (Stack — Deep First)</option></select>`;
+  }
+  if (activeTab === "stack") {
+    return `Brackets Input: <select id="ctrl-stk">${["({[]})","()[]{}","([)]","((("].map(v=>`<option value="${v}" ${v===stackStr?'selected':''}>${v}</option>`).join('')}</select>`;
+  }
+  if (activeTab === "dp") {
+    return `Stairs (n): <select id="ctrl-dp">${[4,5,6,7].map(v=>`<option value="${v}" ${v===dpN?'selected':''}>n = ${v}</option>`).join('')}</select>`;
+  }
+  return '';
+}
+
+function renderTrainer() {
+  const q = TRAINER_QS[tqIdx];
+  const opts = ["Two Pointers", "Sliding Window", "Binary Search", "Hash Map", "Sorting", "BFS", "DFS", "Stack", "Linked List", "Dynamic Programming"];
+  document.getElementById('main-area').innerHTML = `
+    <div class="card trainer-wrap">
+      <h2>🎯 "Spot the Pattern" Interview Trainer</h2>
+      <p class="muted">In real interviews, nobody tells you which algorithm to use. Read the problem clues and pick the winning pattern!</p>
+      <div style="display:flex;gap:16px;font-size:0.9rem;">
+        <span>Score: <b style="color:var(--green)">${tqScore} / ${tqTotal}</b></span>
+        <span>Question: <b style="color:var(--blue)">${tqIdx + 1} / ${TRAINER_QS.length}</b></span>
+      </div>
+      <div style="background:#080a0f;border:1px solid var(--border);border-radius:10px;padding:18px;font-size:1.06rem;line-height:1.55;">
+        "${q.q}"
+      </div>
+      <div class="opt-grid" id="t-opts">
+        ${opts.map(o => `<button class="opt-btn" data-o="${o}">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="t-fb"></div>
+      <div class="btn-row">
+        <button class="btn secondary" id="t-next">Next Interview Question →</button>
+      </div>
+    </div>
+  `;
+  let answered = false;
+  document.querySelectorAll('#t-opts button').forEach(b => {
+    b.onclick = () => {
+      if (answered) return;
+      answered = true; tqTotal++;
+      const fb = document.getElementById('t-fb');
+      if (b.dataset.o === q.ans) {
+        tqScore++;
+        fb.className = 'feedback ok';
+        fb.innerHTML = `<b>Spot on! (${q.ans})</b> — ${q.why}`;
+      } else {
+        fb.className = 'feedback err';
+        fb.innerHTML = `<b>Best pattern: ${q.ans}</b> — ${q.why}`;
+      }
+    };
+  });
+  document.getElementById('t-next').onclick = () => {
+    tqIdx = (tqIdx + 1) % TRAINER_QS.length;
+    renderTrainer();
+  };
+}
+
+function renderMain() {
+  if (activeTab === "trainer") { renderTrainer(); return; }
+  const meta = INFO[activeTab];
+  const st = steps[stepIdx];
+
+  const varsHtml = Object.entries(st.vars || {}).map(([k, v]) =>
+    `<div class="var-chip"><span>${k} = </span><b>${v}</b></div>`
+  ).join('');
+
+  const codeHtml = meta.code.map((line, i) =>
+    `<div class="code-line ${st.line === i ? 'active-line' : ''}"><span class="ln">${st.line === i ? '▶' : i+1}</span>${line.replace(/</g,'&lt;')}</div>`
+  ).join('');
+
+  document.getElementById('main-area').innerHTML = `
+    <div class="story-grid">
+      <div class="card">
+        <h2>${meta.title}</h2>
+        <div class="analogy-box">${meta.analogy}</div>
+        <div class="muted"><b style="color:var(--gold)">Interview Clue:</b> ${meta.clue}</div>
+      </div>
+      <div class="card">
+        <h2>Why Does This Pattern Matter?</h2>
+        <div class="vs-grid">
+          <div class="vs-pill slow"><div class="tag">Slow Way</div>${meta.slow}</div>
+          <div class="vs-pill fast"><div class="tag">Smart Pattern</div>${meta.fast}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="work-grid">
+      <div class="card">
+        <div class="toolbar">
+          <h2>Interactive Visualizer</h2>
+          <div class="custom-controls">${renderCustomControls()}</div>
+        </div>
+        <div class="stage">${renderStageHTML(st)}</div>
+        <div class="narration"><b>Step ${stepIdx + 1} / ${steps.length}:</b> ${st.msg}</div>
+        <div class="controls-bar">
+          <div class="btn-row">
+            <button class="btn secondary" id="btn-prev" ${stepIdx === 0 ? 'disabled' : ''}>◀ Back</button>
+            <button class="btn" id="btn-next" ${stepIdx === steps.length - 1 ? 'disabled' : ''}>Step ▶</button>
+            <button class="btn" id="btn-play">${playTimer ? '⏸ Pause' : '▶ Auto Play'}</button>
+            <button class="btn secondary" id="btn-reset">Reset</button>
+          </div>
+          <span class="muted" style="font-family:monospace;">Step ${stepIdx + 1} of ${steps.length}</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Live Python Debugger</h2>
+        <h3>Variables Watch (Right Now)</h3>
+        <div class="vars-box">${varsHtml}</div>
+        <h3>Executing Code (Highlighted Line)</h3>
+        <div class="code-lines">${codeHtml}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Why We Do It Like This &amp; Common Traps</h2>
+      <div class="vs-grid">
+        <div class="vs-pill fast"><div class="tag">Why This Works</div>${meta.why}</div>
+        <div class="vs-pill slow"><div class="tag">Watch Out!</div>${meta.trap}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Real Interview Questions You Can Solve With This Pattern</h2>
+      <div class="q-grid">
+        ${meta.questions.map(([t, d]) => `<div class="q-item"><b>${t}</b><span>${d}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // Bind playback controls
+  document.getElementById('btn-prev').onclick = () => { stopPlay(); if (stepIdx > 0) { stepIdx--; renderMain(); } };
+  document.getElementById('btn-next').onclick = () => { stopPlay(); if (stepIdx < steps.length - 1) { stepIdx++; renderMain(); } };
+  document.getElementById('btn-reset').onclick = () => { stopPlay(); stepIdx = 0; renderMain(); };
+  document.getElementById('btn-play').onclick = () => {
+    if (playTimer) { stopPlay(); renderMain(); return; }
+    if (stepIdx >= steps.length - 1) stepIdx = 0;
+    playTimer = setInterval(() => {
+      if (stepIdx < steps.length - 1) { stepIdx++; renderMain(); }
+      else { stopPlay(); renderMain(); }
+    }, 1050);
+    renderMain();
+  };
+
+  // Bind custom controls
+  const cTp = document.getElementById('ctrl-tp');
+  if (cTp) cTp.onchange = e => { tpTarget = +e.target.value; buildSteps(); renderMain(); };
+  const cK = document.getElementById('ctrl-k');
+  if (cK) cK.onchange = e => { winK = +e.target.value; buildSteps(); renderMain(); };
+  const cBs = document.getElementById('ctrl-bs');
+  if (cBs) cBs.onchange = e => { bsTarget = +e.target.value; buildSteps(); renderMain(); };
+  const cHm = document.getElementById('ctrl-hm');
+  if (cHm) cHm.onchange = e => { hmTarget = +e.target.value; buildSteps(); renderMain(); };
+  const cSa = document.getElementById('ctrl-salgo');
+  if (cSa) cSa.onchange = e => { sortAlgo = e.target.value; buildSteps(); renderMain(); };
+  const cSh = document.getElementById('ctrl-shuf');
+  if (cSh) cSh.onclick = () => {
+    sortArr = Array.from({length: 7}, () => Math.floor(Math.random() * 9) + 1);
+    buildSteps(); renderMain();
+  };
+  const cTr = document.getElementById('ctrl-tree');
+  if (cTr) cTr.onchange = e => { treeMode = e.target.value; buildSteps(); renderMain(); };
+  const cStk = document.getElementById('ctrl-stk');
+  if (cStk) cStk.onchange = e => { stackStr = e.target.value; buildSteps(); renderMain(); };
+  const cDp = document.getElementById('ctrl-dp');
+  if (cDp) cDp.onchange = e => { dpN = +e.target.value; buildSteps(); renderMain(); };
+}
+
+renderNav();
+buildSteps();
+renderMain();
+</script>
+</body>
+</html>

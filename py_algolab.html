@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PyAlgoLab — Live Python Isometric Visualizer</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<style>
+  :root {
+    --bg: #090b10;
+    --panel: #111520;
+    --panel2: #0d1018;
+    --border: #222a3a;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --cyan: #58c4dd;
+    --gold: #f0ac5f;
+    --green: #83c167;
+    --red: #fc6255;
+    --purple: #b392f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(circle at 20% 0%, #131b2e 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(9,11,16,0.9);
+    backdrop-filter: blur(8px);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.3px; }
+  header h1 span { color: var(--cyan); }
+  .sub { font-size: 0.82rem; color: var(--muted); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .status-pill {
+    font-size: 0.78rem;
+    font-family: monospace;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(240,172,95,0.14);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+  }
+  .status-pill.ready {
+    background: rgba(131,193,103,0.14);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .suite-nav { display: flex; gap: 6px; }
+  .suite-nav a {
+    text-decoration: none; font-size: 0.8rem; font-weight: 600;
+    padding: 5px 11px; border-radius: 8px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+  }
+  .suite-nav a:hover { color: var(--text); border-color: var(--cyan); }
+  .suite-nav a.cur { background: rgba(88,196,221,0.16); color: var(--cyan); border-color: var(--cyan); }
+
+  .preset-bar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    align-items: center;
+  }
+  .preset-bar span { font-size: 0.8rem; color: var(--muted); margin-right: 4px; white-space: nowrap; }
+  .preset-btn {
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .preset-btn.active { background: var(--cyan); color: #090b10; border-color: var(--cyan); font-weight: 700; }
+
+  main {
+    flex: 1;
+    padding: 18px 24px 28px;
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.45fr;
+    gap: 18px;
+  }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card h2 { font-size: 0.98rem; color: var(--cyan); }
+
+  /* Editor */
+  textarea.editor {
+    width: 100%;
+    min-height: 230px;
+    background: #080a0f;
+    color: #e6edf3;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    resize: vertical;
+    outline: none;
+    tab-size: 4;
+  }
+  textarea.editor:focus { border-color: var(--cyan); }
+
+  .trace-code {
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 0;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    max-height: 210px;
+    overflow: auto;
+  }
+  .t-line { display: flex; padding: 1px 12px; white-space: pre; color: #8b949e; }
+  .t-line .ln { width: 26px; color: #484f58; user-select: none; flex-shrink: 0; }
+  .t-line.cur {
+    background: rgba(88,196,221,0.16);
+    border-left: 3px solid var(--cyan);
+    color: #ffffff;
+    font-weight: 600;
+  }
+  .t-line.cur .ln { color: var(--cyan); }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    background: var(--cyan);
+    color: #080a0f;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.84rem;
+    transition: transform 0.12s, filter 0.12s;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn:active { transform: scale(0.97); }
+  .btn.secondary { background: #1c2233; color: var(--text); border: 1px solid var(--border); font-weight: 600; }
+  .btn.run { background: var(--green); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Isometric Stage */
+  .iso-stage {
+    background: radial-gradient(circle at 50% 30%, #141c2e 0%, #07090e 85%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 350px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Spring Animation for SVG Isometric Tiles */
+  .iso-tile {
+    transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .iso-tile.lifted {
+    transform: translateY(-16px);
+  }
+  .iso-tile.changed {
+    transform: translateY(-20px) scale(1.04);
+  }
+
+  .dict-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .dict-label {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--purple);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
+  .dict-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .iso-bucket {
+    background: linear-gradient(145deg, #1b1f33, #111424);
+    border: 1px solid var(--purple);
+    border-bottom: 4px solid #6b4fa8;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+    animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .iso-bucket.fresh {
+    border-color: var(--green);
+    border-bottom-color: #4f853b;
+    box-shadow: 0 0 18px rgba(131,193,103,0.35);
+  }
+  .iso-bucket b { color: var(--gold); }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.85); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .vars-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+  .v-chip {
+    background: #141a26;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: monospace;
+    font-size: 0.82rem;
+    transition: all 0.2s;
+  }
+  .v-chip.hi { border-color: var(--gold); background: rgba(240,172,95,0.16); }
+  .v-chip span { color: var(--muted); }
+  .v-chip b { color: var(--gold); }
+
+  .console-box {
+    background: #06080c;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--green);
+    min-height: 40px;
+    white-space: pre-wrap;
+  }
+  .console-box.err { color: var(--red); border-color: var(--red); }
+
+  .scrubber {
+    width: 100%;
+    accent-color: var(--cyan);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>PyAlgoLab</span> — Live Python Isometric Visualizer</h1>
+    <div class="sub">Edit real Python code on the left → click Run → watch isometric 3D tiles animate every line!</div>
+  </div>
+  <div class="header-right">
+    <div class="status-pill" id="py-status">Loading Python (Pyodide)...</div>
+    <div class="suite-nav">
+      <a href="ml_studio.html">ML Math</a>
+      <a href="pandas_sql_studio.html">Pandas &amp; SQL</a>
+      <a href="algo_studio.html">DSA</a>
+      <a href="py_algolab.html" class="cur">PyAlgoLab</a>
+    </div>
+  </div>
+</header>
+
+<div class="preset-bar">
+  <span>Python Presets (Edit freely!):</span>
+  <button class="preset-btn active" data-p="hashmap">Hash Map (Two Sum)</button>
+  <button class="preset-btn" data-p="twoptr">Two Pointers</button>
+  <button class="preset-btn" data-p="bsearch">Binary Search</button>
+  <button class="preset-btn" data-p="bubble">Bubble Sort</button>
+</div>
+
+<main>
+  <!-- LEFT: LIVE PYTHON EDITOR + EXECUTING LINE -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Live Python Editor</h2>
+      <button class="btn run" id="btn-run" disabled>▶ Run &amp; Trace Python</button>
+    </div>
+    <textarea id="editor" class="editor" spellcheck="false"></textarea>
+
+    <div class="card-head">
+      <h2 style="font-size:0.88rem;color:var(--gold);">Executing Line (sys.settrace)</h2>
+      <span class="sub" id="step-label">Step 0 / 0</span>
+    </div>
+    <div class="trace-code" id="trace-code"></div>
+
+    <div class="console-box" id="console">Output will appear here...</div>
+  </div>
+
+  <!-- RIGHT: ISOMETRIC 3D VISUALIZER -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Isometric 3D Stage</h2>
+      <div class="btn-row">
+        <button class="btn secondary" id="btn-prev" disabled>◀ Back</button>
+        <button class="btn" id="btn-next" disabled>Step ▶</button>
+        <button class="btn" id="btn-play" disabled>▶ Play</button>
+        <button class="btn secondary" id="btn-loop" title="Loop animation">🔁 Loop: OFF</button>
+        <button class="btn secondary" id="btn-reset" disabled>Reset</button>
+      </div>
+    </div>
+
+    <input type="range" class="scrubber" id="scrubber" min="0" max="0" value="0" />
+
+    <div class="iso-stage" id="iso-stage">
+      <div class="sub">Waiting for Python engine to load...</div>
+    </div>
+
+    <div class="vars-strip" id="vars-strip">
+      <span class="sub">Variables will appear here as Python runs.</span>
+    </div>
+  </div>
+</main>
+
+<script>
+const PRESETS = {
+  hashmap: `# Try changing nums or target and click Run!
+nums = [7, 1, 5, 2, 8]
+target = 9
+seen = {}
+
+for i in range(len(nums)):
+    num = nums[i]
+    need = target - num
+    if need in seen:
+        print("Found pair at:", seen[need], i)
+        break
+    seen[num] = i`,
+
+  twoptr: `# Try changing target (e.g. 13, 15, 17)!
+nums = [2, 4, 6, 9, 11, 15]
+target = 13
+L = 0
+R = len(nums) - 1
+
+while L < R:
+    total = nums[L] + nums[R]
+    if total == target:
+        print("Match at:", L, R)
+        break
+    elif total < target:
+        L += 1
+    else:
+        R -= 1`,
+
+  bsearch: `# Try changing target (or pick a missing number!)
+nums = [2, 5, 8, 12, 14, 19, 23]
+target = 14
+L = 0
+R = len(nums) - 1
+
+while L <= R:
+    mid = (L + R) // 2
+    if nums[mid] == target:
+        print("Found at index:", mid)
+        break
+    elif nums[mid] < target:
+        L = mid + 1
+    else:
+        R = mid - 1`,
+
+  bubble: `# Watch the isometric tiles swap live!
+nums = [5, 2, 8, 1, 4]
+n = len(nums)
+
+for i in range(n):
+    for j in range(0, n - i - 1):
+        if nums[j] > nums[j + 1]:
+            nums[j], nums[j + 1] = nums[j + 1], nums[j]
+
+print("Sorted:", nums)`
+};
+
+const POINTER_NAMES = new Set([
+  "i", "j", "k", "l", "r", "L", "R", "left", "right", "mid", "low", "high",
+  "start", "end", "idx", "index", "pos", "ptr", "p", "p1", "p2", "slow", "fast",
+  "curr", "cur", "prev", "head", "tail", "front", "rear"
+]);
+const PTR_COLORS = {
+  L: "#58c4dd", l: "#58c4dd", left: "#58c4dd", low: "#58c4dd", i: "#58c4dd", start: "#58c4dd", slow: "#58c4dd", p1: "#58c4dd",
+  R: "#f0ac5f", r: "#f0ac5f", right: "#f0ac5f", high: "#f0ac5f", j: "#f0ac5f", end: "#f0ac5f", fast: "#f0ac5f", p2: "#f0ac5f",
+  mid: "#b392f0", ptr: "#83c167", k: "#83c167", idx: "#83c167", index: "#83c167", pos: "#83c167"
+};
+
+let pyodide = null;
+let traceSteps = [];
+let curStep = 0;
+let playTimer = null;
+let loopPlay = false;
+
+const editor = document.getElementById('editor');
+editor.value = PRESETS.hashmap;
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.preset-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    editor.value = PRESETS[b.dataset.p];
+    if (pyodide) runPythonTrace();
+  };
+});
+
+// Load Pyodide
+async function initPy() {
+  try {
+    pyodide = await loadPyodide();
+    const st = document.getElementById('py-status');
+    st.textContent = "Python 3.12 Ready ●";
+    st.classList.add('ready');
+    document.getElementById('btn-run').disabled = false;
+    runPythonTrace();
+  } catch (e) {
+    document.getElementById('py-status').textContent = "Pyodide Load Failed";
+    document.getElementById('console').className = "console-box err";
+    document.getElementById('console').textContent = "Could not load Pyodide (needs internet on first load): " + e;
+  }
+}
+initPy();
+
+async function runPythonTrace() {
+  stopPlay();
+  const code = editor.value;
+  pyodide.globals.set("USER_CODE", code);
+
+  const runner = `
+import sys, io, json
+
+_steps = []
+_buf = io.StringIO()
+_old_out = sys.stdout
+sys.stdout = _buf
+
+def _clean(val):
+    if isinstance(val, (int, float, str, bool)) or val is None:
+        return val
+    if isinstance(val, (list, tuple)):
+        return [_clean(x) for x in val[:16]]
+    if isinstance(val, dict):
+        return {str(k): _clean(v) for k, v in list(val.items())[:12]}
+    return str(val)
+
+def _tracer(frame, event, arg):
+    if frame.f_code.co_filename == "<user_code>" and event == "line":
+        if len(_steps) >= 220:
+            raise RuntimeError("Stopped at 220 steps (possible infinite loop)")
+        snap = {}
+        for k, v in frame.f_locals.items():
+            if not k.startswith("_"):
+                snap[k] = _clean(v)
+        _steps.append({
+            "line": frame.f_lineno,
+            "vars": snap,
+            "out": _buf.getvalue()
+        })
+    return _tracer
+
+_err = None
+try:
+    _compiled = compile(USER_CODE, "<user_code>", "exec")
+    _ns = {}
+    sys.settrace(_tracer)
+    exec(_compiled, _ns, _ns)
+    sys.settrace(None)
+    # Capture final state
+    _final = {k: _clean(v) for k, v in _ns.items() if not k.startswith("_") and not callable(v)}
+    _steps.append({"line": -1, "vars": _final, "out": _buf.getvalue(), "done": True})
+except Exception as e:
+    sys.settrace(None)
+    _err = f"{type(e).__name__}: {e}"
+finally:
+    sys.stdout = _old_out
+
+json.dumps({"steps": _steps, "error": _err})
+`;
+
+  const raw = await pyodide.runPythonAsync(runner);
+  const res = JSON.parse(raw);
+
+  if (res.error) {
+    document.getElementById('console').className = "console-box err";
+    document.getElementById('console').textContent = res.error;
+  } else {
+    document.getElementById('console').className = "console-box";
+  }
+
+  traceSteps = res.steps || [];
+  curStep = 0;
+  const scrub = document.getElementById('scrubber');
+  scrub.max = Math.max(0, traceSteps.length - 1);
+  scrub.value = 0;
+  ['btn-prev', 'btn-next', 'btn-play', 'btn-reset'].forEach(id => {
+    document.getElementById(id).disabled = traceSteps.length === 0;
+  });
+  renderStep();
+  if (traceSteps.length > 1 && !res.error) startPlay();
+}
+
+function drawIsoArraySVG(name, arr, pointers, prevArr, targetVal) {
+  const n = arr.length;
+  const tileW = 74, tileH = 40, depth = 18;
+  const spacing = 82;
+  const totalW = Math.max(320, n * spacing + 60);
+  const startX = (totalW - (n - 1) * spacing) / 2;
+  const baseY = 108;
+
+  let svg = `<svg viewBox="0 0 ${totalW} 215" width="100%" style="max-width:${Math.min(760, totalW)}px; overflow:visible;">
+    <defs>
+      <filter id="glow"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.55"/></filter>
+    </defs>
+    <text x="${totalW/2}" y="18" text-anchor="middle" fill="#58c4dd" font-family="monospace" font-size="13" font-weight="700">${name} (list, len=${n})</text>`;
+
+  arr.forEach((val, idx) => {
+    const cx = startX + idx * spacing;
+    const cy = baseY;
+    const ptrsHere = pointers.filter(p => p.val === idx);
+    const isChanged = prevArr && prevArr[idx] !== val;
+    const isActive = ptrsHere.length > 0;
+    const isTarget = targetVal !== undefined && val === targetVal;
+
+    let topCol = "#1b2436", leftCol = "#121826", rightCol = "#0e131e", stroke = "#2e3c56", txtCol = "#e6edf3";
+    if (isChanged) {
+      topCol = "#264729"; leftCol = "#1a331d"; rightCol = "#132615"; stroke = "#83c167"; txtCol = "#83c167";
+    } else if (isActive) {
+      const c = PTR_COLORS[ptrsHere[0].name] || "#58c4dd";
+      topCol = "#1d3145"; leftCol = "#142230"; rightCol = "#0f1a26"; stroke = c; txtCol = "#ffffff";
+    } else if (isTarget) {
+      topCol = "#2b2238"; leftCol = "#1d1726"; rightCol = "#16111e"; stroke = "#b392f0"; txtCol = "#e6edf3";
+    }
+
+    const cls = "iso-tile" + (isChanged ? " changed" : isActive ? " lifted" : "");
+    // Isometric diamond points
+    const topPts = `${cx},${cy - tileH/2} ${cx + tileW/2},${cy} ${cx},${cy + tileH/2} ${cx - tileW/2},${cy}`;
+    const leftPts = `${cx - tileW/2},${cy} ${cx},${cy + tileH/2} ${cx},${cy + tileH/2 + depth} ${cx - tileW/2},${cy + depth}`;
+    const rightPts = `${cx + tileW/2},${cy} ${cx},${cy + tileH/2} ${cx},${cy + tileH/2 + depth} ${cx + tileW/2},${cy + depth}`;
+
+    svg += `<g class="${cls}" filter="url(#glow)">
+      <polygon points="${leftPts}" fill="${leftCol}" stroke="${stroke}" stroke-width="1.2"/>
+      <polygon points="${rightPts}" fill="${rightCol}" stroke="${stroke}" stroke-width="1.2"/>
+      <polygon points="${topPts}" fill="${topCol}" stroke="${stroke}" stroke-width="2"/>
+      <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="${txtCol}" font-family="monospace" font-size="16" font-weight="800">${val}</text>`;
+
+    // Floating pointer badges with value & downward arrow
+    ptrsHere.forEach((p, pi) => {
+      const pc = PTR_COLORS[p.name] || "#f0ac5f";
+      const label = `${p.name}=${p.val}`;
+      const bw = Math.max(42, label.length * 8 + 12);
+      const py = cy - tileH/2 - 18 - pi * 22;
+      svg += `<rect x="${cx - bw/2}" y="${py - 12}" width="${bw}" height="18" rx="5" fill="${pc}"/>
+              <text x="${cx}" y="${py + 1}" text-anchor="middle" fill="#090b10" font-family="monospace" font-size="11" font-weight="800">${label}</text>
+              ${pi === 0 ? `<polygon points="${cx-5},${py+6} ${cx+5},${py+6} ${cx},${py+12}" fill="${pc}"/>` : ''}`;
+    });
+
+    svg += `</g>
+      <text x="${cx}" y="${cy + tileH/2 + depth + 18}" text-anchor="middle" fill="#6e7681" font-family="monospace" font-size="11">[${idx}]</text>
+      ${isTarget ? `<text x="${cx}" y="${cy + tileH/2 + depth + 34}" text-anchor="middle" fill="#b392f0" font-family="monospace" font-size="10" font-weight="700">🎯 target</text>` : ''}`;
+  });
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function renderStep() {
+  if (!traceSteps.length) return;
+  const st = traceSteps[curStep];
+  const prev = curStep > 0 ? traceSteps[curStep - 1] : null;
+  const vars = st.vars || {};
+  const prevVars = prev ? (prev.vars || {}) : {};
+
+  // Update scrubber & label
+  document.getElementById('scrubber').value = curStep;
+  document.getElementById('step-label').textContent = `Step ${curStep + 1} / ${traceSteps.length}${st.done ? ' (Finished)' : ''}`;
+  document.getElementById('btn-prev').disabled = curStep === 0;
+  document.getElementById('btn-next').disabled = curStep === traceSteps.length - 1;
+
+  // Executing line highlighter
+  const lines = editor.value.split('\n');
+  document.getElementById('trace-code').innerHTML = lines.map((txt, idx) => {
+    const ln = idx + 1;
+    const isCur = st.line === ln;
+    return `<div class="t-line ${isCur ? 'cur' : ''}"><span class="ln">${isCur ? '▶' : ln}</span>${txt.replace(/</g,'&lt;')}</div>`;
+  }).join('');
+
+  // Console
+  const cBox = document.getElementById('console');
+  if (!cBox.classList.contains('err')) {
+    cBox.textContent = st.out ? st.out : "(no print output yet)";
+  }
+
+  // Separate arrays, dicts, pointers, scalars
+  const lists = [], dicts = [], pointers = [], scalars = [];
+  Object.entries(vars).forEach(([k, v]) => {
+    if (Array.isArray(v)) lists.push([k, v]);
+    else if (v && typeof v === "object") dicts.push([k, v]);
+    else {
+      scalars.push([k, v]);
+      if (POINTER_NAMES.has(k) && typeof v === "number" && Number.isInteger(v)) {
+        pointers.push({ name: k, val: v });
+      }
+    }
+  });
+
+  // Render Isometric Stage
+  const targetVal = vars.target !== undefined ? vars.target : vars.key;
+  let stageHtml = "";
+  lists.forEach(([name, arr]) => {
+    stageHtml += drawIsoArraySVG(name, arr, pointers, Array.isArray(prevVars[name]) ? prevVars[name] : null, targetVal);
+  });
+
+  dicts.forEach(([name, obj]) => {
+    const entries = Object.entries(obj);
+    const prevObj = (prevVars[name] && typeof prevVars[name] === "object") ? prevVars[name] : {};
+    const needStr = vars.need !== undefined ? String(vars.need) : null;
+    stageHtml += `<div class="dict-section">
+      <div class="dict-label">${name} (dict — O(1) Hash Table)</div>
+      <div class="dict-row">
+        ${entries.length ? entries.map(([k, v]) => {
+          const fresh = !(k in prevObj) || prevObj[k] !== v || (needStr !== null && k === needStr);
+          return `<div class="iso-bucket ${fresh ? 'fresh' : ''}"><b>${k}</b> → ${v}</div>`;
+        }).join('') : '<span class="sub">empty {}</span>'}
+      </div>
+    </div>`;
+  });
+
+  if (!stageHtml) {
+    stageHtml = `<div class="sub">Create a Python list (like <code>nums = [1, 2, 3]</code>) or dict to see isometric 3D tiles!</div>`;
+  }
+  document.getElementById('iso-stage').innerHTML = stageHtml;
+
+  // Render scalar variable chips
+  document.getElementById('vars-strip').innerHTML = scalars.length
+    ? scalars.map(([k, v]) => {
+        const hi = prevVars[k] !== v;
+        return `<div class="v-chip ${hi ? 'hi' : ''}"><span>${k} = </span><b>${JSON.stringify(v)}</b></div>`;
+      }).join('')
+    : '<span class="sub">No scalar variables yet.</span>';
+}
+
+function stopPlay() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  document.getElementById('btn-play').textContent = "▶ Play";
+}
+
+function startPlay() {
+  stopPlay();
+  if (curStep >= traceSteps.length - 1) curStep = 0;
+  document.getElementById('btn-play').textContent = "⏸ Pause";
+  playTimer = setInterval(() => {
+    if (curStep < traceSteps.length - 1) {
+      curStep++;
+      renderStep();
+    } else if (loopPlay) {
+      curStep = 0;
+      renderStep();
+    } else {
+      stopPlay();
+    }
+  }, 600);
+}
+
+document.getElementById('btn-run').onclick = runPythonTrace;
+document.getElementById('btn-prev').onclick = () => { stopPlay(); if (curStep > 0) { curStep--; renderStep(); } };
+document.getElementById('btn-next').onclick = () => { stopPlay(); if (curStep < traceSteps.length - 1) { curStep++; renderStep(); } };
+document.getElementById('btn-reset').onclick = () => { stopPlay(); curStep = 0; renderStep(); };
+document.getElementById('scrubber').oninput = e => { stopPlay(); curStep = +e.target.value; renderStep(); };
+document.getElementById('btn-loop').onclick = (e) => {
+  loopPlay = !loopPlay;
+  e.target.textContent = `🔁 Loop: ${loopPlay ? 'ON' : 'OFF'}`;
+};
+document.getElementById('btn-play').onclick = () => {
+  if (playTimer) { stopPlay(); return; }
+  startPlay();
+};
+</script>
+</body>
+</html>
